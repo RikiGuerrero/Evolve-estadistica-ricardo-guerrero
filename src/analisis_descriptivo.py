@@ -2,13 +2,27 @@
 Análisis Descriptivo del Dataset de Miembros de Gimnasio
 =========================================================
 Este script realiza un análisis exploratorio de datos (EDA) para entender
-la estructura y características del dataset
+la estructura y características del dataset.
+
+Secciones del script:
+  1.  Carga de datos
+  2.  Información general del dataset
+  3.  Calidad de datos (nulos y duplicados)
+  4.  Clasificación de variables
+  5.  Estadísticas descriptivas de variables numéricas
+  6.  Análisis de variables categóricas
+  7.  Detección de outliers (método IQR)
+  8.  Estadísticas por grupos (Workout_Type, Gender, Experience_Level)
+  9.  Matriz de correlación (Pearson) y heatmap
+  10. Resumen ejecutivo
+
+Requisitos: pandas, numpy, matplotlib (ver requirements.txt)
 """
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import os
+import pandas as pd      # Manejo de datos tabulares (DataFrames)
+import numpy as np       # Operaciones numéricas y selección de tipos
+import matplotlib.pyplot as plt  # Generación de gráficos
+import os                # Manejo de rutas del sistema de archivos
 
 # =============================================================================
 # 1. CARGA DE DATOS
@@ -17,12 +31,14 @@ print("=" * 80)
 print("1. CARGA Y ESTRUCTURA DEL DATASET")
 print("=" * 80)
 
-# Obtener directorio del script para rutas relativas
+# Calcular rutas absolutas para que el script funcione desde cualquier directorio
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.dirname(script_dir)
 
+# Leer el CSV en un DataFrame de pandas
 df = pd.read_csv(os.path.join(project_dir, 'data', 'gym_members_exercise_tracking.csv'))
 
+# Mostrar tamaño del dataset: número de filas (registros) y columnas (variables)
 print(f"\nDimensiones del dataset: {df.shape[0]} filas x {df.shape[1]} columnas")
 print(f"\nColumnas disponibles:")
 for i, col in enumerate(df.columns, 1):
@@ -36,13 +52,13 @@ print("2. INFORMACIÓN GENERAL DEL DATASET")
 print("=" * 80)
 
 print("\nTipos de datos por columna:")
-print(df.dtypes)
+print(df.dtypes)   # Muestra si cada columna es int64, float64, object, etc.
 
 print("\nPrimeras 5 filas del dataset:")
-print(df.head())
+print(df.head())   # Vista previa del inicio del dataset
 
 print("\nÚltimas 5 filas del dataset:")
-print(df.tail())
+print(df.tail())   # Vista previa del final del dataset
 
 # =============================================================================
 # 3. ANÁLISIS DE VALORES NULOS Y DUPLICADOS
@@ -52,14 +68,16 @@ print("3. CALIDAD DE DATOS - VALORES NULOS Y DUPLICADOS")
 print("=" * 80)
 
 print("\nValores nulos por columna:")
-null_counts = df.isnull().sum()
-null_percentages = (df.isnull().sum() / len(df) * 100).round(2)
+null_counts = df.isnull().sum()                          # Total de NaN por columna
+null_percentages = (df.isnull().sum() / len(df) * 100).round(2)  # Porcentaje de NaN
 null_df = pd.DataFrame({
     'Nulos': null_counts,
     'Porcentaje (%)': null_percentages
 })
+# Solo muestra columnas con al menos un nulo; si no hay ninguno, avisa
 print(null_df[null_df['Nulos'] > 0] if null_df['Nulos'].sum() > 0 else "No hay valores nulos en el dataset")
 
+# Cuenta filas que son copias exactas de otra fila
 print(f"\nFilas duplicadas: {df.duplicated().sum()}")
 
 # =============================================================================
@@ -70,10 +88,10 @@ print("4. CLASIFICACIÓN DE VARIABLES")
 print("=" * 80)
 
 # Identificar variables numéricas y categóricas
-numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-categorical_cols = df.select_dtypes(include=['object', 'string']).columns.tolist()
+numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()   # int64, float64
+categorical_cols = df.select_dtypes(include=['object', 'string']).columns.tolist()  # texto
 
-# Variables ordinales (categóricas con orden numérico)
+# Variables ordinales (categóricas con orden numérico representado como entero)
 ordinal_cols = ['Experience_Level']  # 1=Beginner, 2=Intermediate, 3=Expert
 
 print(f"\nVariables Numéricas Continuas ({len(numeric_cols) - len(ordinal_cols)}):")
@@ -98,21 +116,25 @@ print("5. ESTADÍSTICAS DESCRIPTIVAS - VARIABLES NUMÉRICAS")
 print("=" * 80)
 
 print("\nResumen estadístico general:")
+# .describe() calcula count, mean, std, min, Q1, Q2, Q3 y max para cada columna
+# .T transpone la tabla para que las variables queden como filas (más legible)
 print(df[numeric_cols].describe().T)
 
 print("\n" + "-" * 60)
 print("Medidas de tendencia central y dispersión detalladas:")
 print("-" * 60)
 
+# Construye una tabla con las medidas estadísticas más importantes
 stats_detailed = pd.DataFrame({
-    'Media': df[numeric_cols].mean(),
-    'Mediana': df[numeric_cols].median(),
-    'Moda': df[numeric_cols].mode().iloc[0],
-    'Desv. Estándar': df[numeric_cols].std(),
-    'Varianza': df[numeric_cols].var(),
+    'Media': df[numeric_cols].mean(),               # Promedio aritmético
+    'Mediana': df[numeric_cols].median(),           # Valor central (percentil 50)
+    'Moda': df[numeric_cols].mode().iloc[0],        # Valor más frecuente
+    'Desv. Estándar': df[numeric_cols].std(),       # Dispersión típica
+    'Varianza': df[numeric_cols].var(),             # Desv. estándar al cuadrado
     'Mínimo': df[numeric_cols].min(),
     'Máximo': df[numeric_cols].max(),
-    'Rango': df[numeric_cols].max() - df[numeric_cols].min(),
+    'Rango': df[numeric_cols].max() - df[numeric_cols].min(),  # Máx - Mín
+    # Coeficiente de variación: dispersión relativa expresada como porcentaje
     'Coef. Variación (%)': (df[numeric_cols].std() / df[numeric_cols].mean() * 100)
 })
 print(stats_detailed.round(2))
@@ -121,6 +143,9 @@ print("\n" + "-" * 60)
 print("Cuartiles y Rango Intercuartílico (IQR):")
 print("-" * 60)
 
+# Los cuartiles dividen los datos ordenados en cuatro partes iguales.
+# El IQR (Q3 - Q1) representa el 50 % central de los datos y es resistente
+# a outliers, por lo que se usa para detectar valores atípicos.
 quartiles = pd.DataFrame({
     'Q1 (25%)': df[numeric_cols].quantile(0.25),
     'Q2 (50%)': df[numeric_cols].quantile(0.50),
@@ -133,6 +158,15 @@ print("\n" + "-" * 60)
 print("Asimetría (Skewness) y Curtosis:")
 print("-" * 60)
 
+# Skewness (asimetría):
+#   > 0 → cola larga a la derecha (más valores bajos)
+#   = 0 → distribución simétrica (como la normal)
+#   < 0 → cola larga a la izquierda (más valores altos)
+#
+# Kurtosis (curtosis, excess kurtosis en pandas):
+#   > 0 → colas más pesadas que la normal (distribución leptocúrtica)
+#   = 0 → igual que la normal (mesocúrtica)
+#   < 0 → colas más ligeras que la normal (platicúrtica)
 shape_stats = pd.DataFrame({
     'Asimetría (Skewness)': df[numeric_cols].skew(),
     'Curtosis': df[numeric_cols].kurtosis()
@@ -148,8 +182,8 @@ print("=" * 80)
 
 for col in categorical_cols:
     print(f"\n--- {col} ---")
-    freq_table = df[col].value_counts()
-    freq_pct = df[col].value_counts(normalize=True) * 100
+    freq_table = df[col].value_counts()                          # Frecuencia absoluta
+    freq_pct = df[col].value_counts(normalize=True) * 100        # Frecuencia relativa (%)
     
     cat_summary = pd.DataFrame({
         'Frecuencia': freq_table,
@@ -166,12 +200,29 @@ print("7. DETECCIÓN DE OUTLIERS (MÉTODO IQR)")
 print("=" * 80)
 
 def detect_outliers_iqr(data, column):
-    """Detecta outliers usando el método IQR"""
+    """
+    Detecta outliers usando el método de la cerca de Tukey (IQR).
+
+    Un valor es outlier si cae fuera del rango:
+        [Q1 - 1.5*IQR, Q3 + 1.5*IQR]
+
+    Parámetros
+    ----------
+    data : pd.DataFrame
+        Dataset completo.
+    column : str
+        Nombre de la columna a analizar.
+
+    Retorna
+    -------
+    tuple[int, float, float]
+        (número de outliers, límite inferior, límite superior)
+    """
     Q1 = data[column].quantile(0.25)
     Q3 = data[column].quantile(0.75)
     IQR = Q3 - Q1
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
+    lower_bound = Q1 - 1.5 * IQR   # Valores por debajo de este límite son outliers
+    upper_bound = Q3 + 1.5 * IQR   # Valores por encima de este límite son outliers
     outliers = data[(data[column] < lower_bound) | (data[column] > upper_bound)]
     return len(outliers), lower_bound, upper_bound
 
@@ -186,8 +237,8 @@ for col in numeric_cols:
         'Variable': col,
         'N° Outliers': n_outliers,
         '% Outliers': round(pct_outliers, 2),
-        'Límite Inferior': round(lb, 2),
-        'Límite Superior': round(ub, 2)
+        'Límite Inferior': round(lb, 2),   # Por debajo → outlier
+        'Límite Superior': round(ub, 2)    # Por encima → outlier
     })
 
 outlier_df = pd.DataFrame(outlier_summary)
@@ -201,6 +252,8 @@ print("8. ESTADÍSTICAS POR GRUPOS")
 print("=" * 80)
 
 print("\n--- Estadísticas por Tipo de Ejercicio (Workout_Type) ---")
+# .groupby() agrupa las filas por categoría; .agg() aplica múltiples funciones
+# a varias columnas al mismo tiempo
 workout_stats = df.groupby('Workout_Type').agg({
     'Age': ['mean', 'std'],
     'Weight (kg)': ['mean', 'std'],
@@ -238,7 +291,7 @@ print("\n" + "=" * 80)
 print("9. MATRIZ DE CORRELACIÓN (PEARSON)")
 print("=" * 80)
 
-correlation_matrix = df[numeric_cols].corr()
+correlation_matrix = df[numeric_cols].corr()   # Correlación de Pearson entre todas las variables numéricas
 
 # Crear nombres cortos para mejor visualización
 short_names = {
@@ -262,14 +315,16 @@ corr_display = correlation_matrix.copy()
 corr_display.index = [short_names.get(c, c) for c in corr_display.index]
 corr_display.columns = [short_names.get(c, c) for c in corr_display.columns]
 
-# Crear directorio para gráficos si no existe
+# Crear directorio de salida para gráficos si no existe aún
 output_dir = os.path.join(project_dir, 'output')
 os.makedirs(output_dir, exist_ok=True)
 
-# Generar heatmap de correlación
+# Generar heatmap de correlación usando imshow (sin seaborn)
 fig, ax = plt.subplots(figsize=(12, 10))
 
-# Crear el heatmap manualmente con imshow
+# imshow representa la matriz de correlación como una imagen de colores.
+# cmap='RdBu_r': rojo = correlación negativa, azul = correlación positiva.
+# vmin=-1, vmax=1 fija la escala de colores al rango completo de Pearson.
 im = ax.imshow(corr_display.values, cmap='RdBu_r', aspect='auto', vmin=-1, vmax=1)
 
 # Configurar ejes
@@ -278,7 +333,8 @@ ax.set_yticks(range(len(corr_display.index)))
 ax.set_xticklabels(corr_display.columns, rotation=45, ha='right', fontsize=10)
 ax.set_yticklabels(corr_display.index, fontsize=10)
 
-# Añadir valores en cada celda
+# Añadir el valor numérico de cada correlación dentro de su celda.
+# El color del texto cambia a blanco cuando el fondo es muy oscuro (|r| > 0.5).
 for i in range(len(corr_display.index)):
     for j in range(len(corr_display.columns)):
         value = corr_display.iloc[i, j]
@@ -304,7 +360,8 @@ print("\n" + "-" * 60)
 print("Correlaciones más fuertes (|r| > 0.5):")
 print("-" * 60)
 
-# Encontrar correlaciones fuertes
+# Encontrar pares de variables con correlación fuerte (|r| > 0.5).
+# Se itera sobre el triángulo superior de la matriz para evitar duplicados.
 strong_correlations = []
 for i in range(len(correlation_matrix.columns)):
     for j in range(i+1, len(correlation_matrix.columns)):
