@@ -66,10 +66,7 @@ def resumen_estructural(df: pd.DataFrame):
 	dtypes = df.dtypes.astype(str)
 	nulos_pct = (df.isna().mean() * 100).round(2)
 
-	print("=" * 70)
-	print("A) RESUMEN ESTRUCTURAL")
-	print("=" * 70)
-	print(f"Filas: {n_filas}")
+	print(f"\nFilas: {n_filas}")
 	print(f"Columnas: {n_cols}")
 	print(f"Tamaño en memoria: {memoria_mb:.3f} MB")
 	print("\nTipos de dato (dtypes):")
@@ -119,16 +116,28 @@ def estadisticos(df: pd.DataFrame, num_cols: list[str]):
 	skew_target = df[TARGET].skew()
 	kurt_target = df[TARGET].kurtosis()
 
-	print("\n" + "=" * 70)
-	print("B) ESTADISTICOS DESCRIPTIVOS DE VARIABLES NUMERICAS")
-	print("=" * 70)
-	print(stats_df)
+	print(f"\n{stats_df}")
 	print(f"\nIQR de {TARGET}: {iqr_target:.4f}")
 	print(f"Asimetria (skewness) de {TARGET}: {skew_target:.4f}")
 	print(f"Curtosis de {TARGET}: {kurt_target:.4f}")
 
 
 def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], out_dir: Path):
+	"""Genera histogramas, boxplots y tratamiento de outliers por IQR.
+
+	Parámetros:
+		df (pd.DataFrame): DataFrame de entrada sobre el que se generan las
+			distribuciones y se evalúan los outliers.
+		num_cols (list[str]): Lista de columnas numéricas para dibujar los
+			histogramas y aplicar la detección de outliers.
+		cat_cols (list[str]): Lista de columnas categóricas usadas para crear
+			boxplots de la variable objetivo.
+		out_dir (Path): Directorio donde se guardan las imágenes generadas.
+
+	Valor de retorno:
+		pd.DataFrame: Copia del DataFrame original con las columnas numéricas
+			ajustadas mediante clipping a los límites IQR calculados.
+	"""
 	# Histogramas de variables numéricas
 	n_num = len(num_cols)
 	cols_plot = 3
@@ -147,6 +156,7 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 	fig.suptitle("Histogramas de variables numéricas", fontsize=14)
 	fig.tight_layout()
 	fig.savefig(out_dir / REQUIRED_OUTPUTS["histogramas_png"], dpi=180)
+	print(f"\nHistogramas guardados en: {out_dir / REQUIRED_OUTPUTS['histogramas_png']}")
 	plt.close(fig)
 
 	# Boxplots del target por cada categórica
@@ -169,9 +179,10 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 		fig.suptitle("Boxplots de la variable objetivo por variables categóricas", fontsize=14)
 		fig.tight_layout()
 		fig.savefig(out_dir / REQUIRED_OUTPUTS["boxplots_png"], dpi=180)
+		print(f"\nBoxplots guardados en: {out_dir / REQUIRED_OUTPUTS['boxplots_png']}")
 		plt.close(fig)
 
-	# Detección y tratamiento de outliers por IQR (winsorización por clipping)
+	# Detección y tratamiento de outliers por IQR
 	outlier_resumen = []
 	df_tratado = df.copy()
 
@@ -190,20 +201,23 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 
 		df_tratado[col] = df_tratado[col].clip(lower=li, upper=ls)
 
-	outlier_df = pd.DataFrame(outlier_resumen).sort_values("pct_outliers", ascending=False)
-
-	print("\n" + "=" * 70)
-	print("C) OUTLIERS (MÉTODO IQR) Y TRATAMIENTO")
-	print("=" * 70)
-	print(outlier_df)
-
 	return df_tratado
 
 
-def apartado_d_categoricas(df: pd.DataFrame, cat_cols: list[str], out_dir: Path):
-	print("\n" + "=" * 70)
-	print("D) VARIABLES CATEGÓRICAS")
-	print("=" * 70)
+def categoricas(df: pd.DataFrame, cat_cols: list[str], out_dir: Path):
+	"""Analiza variables categóricas y genera sus gráficos de frecuencia.
+
+	Parámetros:
+		df (pd.DataFrame): DataFrame de entrada con las variables a analizar.
+		cat_cols (list[str]): Lista de columnas categóricas para calcular
+			frecuencias absolutas/relativas y crear los countplots.
+		out_dir (Path): Directorio donde se guarda la imagen con los gráficos
+			de variables categóricas.
+
+	Valor de retorno:
+		None: La función imprime tablas de frecuencias y mensajes de posible
+			desbalance, y guarda el gráfico en el directorio especificado.
+	"""
 
 	if not cat_cols:
 		print("No hay variables categóricas detectadas.")
@@ -241,19 +255,52 @@ def apartado_d_categoricas(df: pd.DataFrame, cat_cols: list[str], out_dir: Path)
 	fig.suptitle("Frecuencia de variables categóricas", fontsize=14)
 	fig.tight_layout()
 	fig.savefig(out_dir / REQUIRED_OUTPUTS["categoricas_png"], dpi=180)
+	print(f"\nGráficos de variables categóricas guardados en: {out_dir / REQUIRED_OUTPUTS['categoricas_png']}")
 	plt.close(fig)
 
 
-def apartado_e_correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path):
+def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path):
+	"""Calcula correlaciones, genera un heatmap y resume relaciones clave.
+
+	Parámetros:
+		df_tratado (pd.DataFrame): DataFrame con variables numéricas ya
+			preprocesadas.
+		num_cols (list[str]): Lista de columnas numéricas usadas para construir
+			la matriz de correlación de Pearson.
+		out_dir (Path): Directorio donde se guarda la imagen del heatmap.
+
+	Valor de retorno:
+		None: La función no retorna valores; imprime por pantalla el top de
+			correlaciones con TARGET y los pares con posible multicolinealidad,
+			y además guarda el heatmap en el directorio especificado.
+	"""
+	# Calcula matriz de correlación de Pearson y genera un heatmap.
 	corr = df_tratado[num_cols].corr(method="pearson")
 
-	plt.figure(figsize=(12, 9))
-	sns.heatmap(corr, cmap="RdBu_r", center=0, vmin=-1, vmax=1, annot=False, square=True)
+	plt.figure(figsize=(13, 10))
+	sns.heatmap(
+		corr,
+		cmap="RdBu_r",
+		center=0,
+		vmin=-1,
+		vmax=1,
+		annot=True,
+		fmt=".2f",
+		square=True,
+		linewidths=0.4,
+		linecolor="white",
+		cbar_kws={"label": "Correlación de Pearson"},
+		annot_kws={"size": 8},
+	)
 	plt.title("Matriz de correlación de Pearson")
+	plt.xticks(rotation=45, ha="right")
+	plt.yticks(rotation=0)
 	plt.tight_layout()
 	plt.savefig(out_dir / REQUIRED_OUTPUTS["heatmap_png"], dpi=180)
+	print(f"\nHeatmap de correlaciones guardado en: {out_dir / REQUIRED_OUTPUTS['heatmap_png']}\n")
 	plt.close()
 
+	# Analiza correlaciones con la variable objetivo y posibles multicolinealidades
 	if TARGET not in corr.columns:
 		raise ValueError(f"{TARGET} no aparece en columnas numéricas para correlación.")
 
@@ -268,9 +315,6 @@ def apartado_e_correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_
 			if abs(r) > 0.9:
 				pares_multicol.append((cols_num[i], cols_num[j], r))
 
-	print("\n" + "=" * 70)
-	print("E) CORRELACIONES")
-	print("=" * 70)
 	print("Top 3 correlaciones absolutas con la variable objetivo:")
 	for var, r in top3.items():
 		print(f"  - {var}: {r:.4f}")
@@ -282,17 +326,13 @@ def apartado_e_correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_
 		for v1, v2, r in pares_multicol:
 			print(f"  - {v1} vs {v2}: r = {r:.4f}")
 
-	return top3, pares_multicol
-
 if __name__ == "__main__":
 
 	print("=" * 70)
 	print("EJERCICIO 1 — Análisis Estadístico Descriptivo")
 	print("=" * 70)
 
-	#--------------------------------------------------------------------------------
 	# Carga del csv y configuración de paths de entrada/salida
-	#--------------------------------------------------------------------------------
 	base_dir = Path(__file__).resolve().parent
 	data_path = base_dir / "data" / "gym_members_exercise_tracking.csv"
 	out_dir = base_dir / "output"
@@ -301,24 +341,30 @@ if __name__ == "__main__":
 		raise FileNotFoundError(f"No se encuentra el dataset en: {data_path}")
 	df = pd.read_csv(data_path)
 
+	print("\n" + "=" * 70)
+	print("A) RESUMEN ESTRUCTURAL")
+	print("=" * 70)
 	resumen_estructural(df)
+	df.describe().to_csv(out_dir / REQUIRED_OUTPUTS["descriptivo_csv"], index=True)
+	print(f"\nEstadísticos descriptivos guardados en: {out_dir / REQUIRED_OUTPUTS['descriptivo_csv']}")
 
+	print("\n" + "=" * 70)
+	print("B) ESTADISTICOS DESCRIPTIVOS DE VARIABLES NUMERICAS")
+	print("=" * 70)
 	num_cols, cat_cols = detectar_columnas(df)
 	estadisticos(df, num_cols)
 
+	print("\n" + "=" * 70)
+	print("C) DISTRIBUCIONES")
+	print("=" * 70)
 	df_tratado = distribuciones(df, num_cols, cat_cols, out_dir)
 
-	# D) Categóricas
-	apartado_d_categoricas(df, cat_cols, out_dir)
+	print("\n" + "=" * 70)
+	print("D) VARIABLES CATEGÓRICAS")
+	print("=" * 70)
+	categoricas(df, cat_cols, out_dir)
 
-	# E) Correlaciones
-	apartado_e_correlaciones(df_tratado, num_cols, out_dir)
-
-	df.describe().to_csv(out_dir / REQUIRED_OUTPUTS["descriptivo_csv"], index=True)
-
-	print("\nArchivos generados en output/:")
-	print(f"  - {REQUIRED_OUTPUTS['descriptivo_csv']}")
-	print(f"  - {REQUIRED_OUTPUTS['histogramas_png']}")
-	print(f"  - {REQUIRED_OUTPUTS['boxplots_png']}")
-	print(f"  - {REQUIRED_OUTPUTS['heatmap_png']}")
-	print(f"  - {REQUIRED_OUTPUTS['categoricas_png']}")
+	print("\n" + "=" * 70)
+	print("E) CORRELACIONES")
+	print("=" * 70)
+	correlaciones(df_tratado, num_cols, out_dir)
