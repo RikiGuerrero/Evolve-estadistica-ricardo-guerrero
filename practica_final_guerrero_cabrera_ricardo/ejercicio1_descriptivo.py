@@ -37,14 +37,31 @@ def detectar_columnas(df: pd.DataFrame):
 	num_cols = [c for c in df.select_dtypes(include=[np.number]).columns if c not in cat_cols]
 	return num_cols, cat_cols
 
-def limites_iqr(serie: pd.Series):
-	"""Calcula límites IQR y máscara de outliers."""
-	q1 = serie.quantile(0.25)
-	q3 = serie.quantile(0.75)
-	iqr = q3 - q1
-	li = q1 - 1.5 * iqr
-	ls = q3 + 1.5 * iqr
-	mask = (serie < li) | (serie > ls)
+
+def limites_zscore(serie: pd.Series, z_threshold: float):
+	"""Calcula límites por Z-score y detecta outliers en una serie numérica.
+
+	Parámetros:
+		serie (pd.Series): Serie numérica sobre la que se estima la media,
+			desviación estándar y la máscara de valores atípicos.
+		z_threshold (float): Umbral de Z-score para considerar un
+			valor como outlier.
+
+	Valor de retorno:
+		tuple[float, float, pd.Series]: Límite inferior, límite superior y
+			máscara booleana con True en las observaciones clasificadas como
+			outliers. Si la desviación estándar es 0 o NaN, devuelve límites
+			infinitos y una máscara sin outliers.
+	"""
+	mu = serie.mean()
+	sigma = serie.std(ddof=1)
+	if sigma == 0 or np.isnan(sigma):
+		li, ls = -np.inf, np.inf
+		mask = pd.Series(False, index=serie.index)
+	else:
+		li = mu - z_threshold * sigma
+		ls = mu + z_threshold * sigma
+		mask = ((serie - mu).abs() / sigma) > z_threshold
 	return li, ls, mask
 
 
@@ -122,8 +139,8 @@ def estadisticos(df: pd.DataFrame, num_cols: list[str]):
 	print(f"Curtosis de {TARGET}: {kurt_target:.4f}")
 
 
-def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], out_dir: Path):
-	"""Genera histogramas, boxplots y tratamiento de outliers por IQR.
+def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], out_dir: Path,):
+	"""Genera histogramas, boxplots y detección de outliers con Z-score.
 
 	Parámetros:
 		df (pd.DataFrame): DataFrame de entrada sobre el que se generan las
@@ -135,8 +152,7 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 		out_dir (Path): Directorio donde se guardan las imágenes generadas.
 
 	Valor de retorno:
-		pd.DataFrame: Copia del DataFrame original con las columnas numéricas
-			ajustadas mediante clipping a los límites IQR calculados.
+		None: La función genera gráficos e imprime el resumen de outliers.
 	"""
 	# Histogramas de variables numéricas
 	n_num = len(num_cols)
@@ -182,12 +198,12 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 		print(f"\nBoxplots guardados en: {out_dir / REQUIRED_OUTPUTS['boxplots_png']}")
 		plt.close(fig)
 
-	# Detección y tratamiento de outliers por IQR
+	# Detección de outliers.
 	outlier_resumen = []
-	df_tratado = df.copy()
 
 	for col in num_cols:
-		li, ls, mask = limites_iqr(df[col])
+		li, ls, mask = limites_zscore(df[col], z_threshold=3.0)
+
 		n_out = int(mask.sum())
 		pct_out = 100 * n_out / len(df)
 
@@ -199,9 +215,9 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 			"limite_superior": round(ls, 4),
 		})
 
-		df_tratado[col] = df_tratado[col].clip(lower=li, upper=ls)
-
-	return df_tratado
+	resumen_df = pd.DataFrame(outlier_resumen).sort_values(by="pct_outliers", ascending=False)
+	print("\nResumen de outliers por variable:")
+	print(resumen_df.to_string(index=False))
 
 
 def categoricas(df: pd.DataFrame, cat_cols: list[str], out_dir: Path):
@@ -357,7 +373,7 @@ if __name__ == "__main__":
 	print("\n" + "=" * 70)
 	print("C) DISTRIBUCIONES")
 	print("=" * 70)
-	df_tratado = distribuciones(df, num_cols, cat_cols, out_dir)
+	distribuciones(df, num_cols, cat_cols, out_dir)
 
 	print("\n" + "=" * 70)
 	print("D) VARIABLES CATEGÓRICAS")
@@ -367,4 +383,4 @@ if __name__ == "__main__":
 	print("\n" + "=" * 70)
 	print("E) CORRELACIONES")
 	print("=" * 70)
-	correlaciones(df_tratado, num_cols, out_dir)
+	correlaciones(df, num_cols, out_dir)
