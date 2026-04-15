@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -9,7 +7,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-
+from pathlib import Path
 
 TARGET = "Calories_Burned"
 TEST_SIZE = 0.20
@@ -82,9 +80,9 @@ def preprocesamiento(df: pd.DataFrame):
 	if TARGET not in df.columns:
 		raise ValueError(f"La variable objetivo {TARGET} no existe en el dataset.")
 
-	num_cols, cat_cols = detectar_columnas(df)
 	X = df.drop(columns=[TARGET])
 	y = df[TARGET]
+	num_cols, cat_cols = detectar_columnas(X)
 
 	X_train, X_test, y_train, y_test = train_test_split(
 		X,
@@ -238,6 +236,10 @@ def variables_mas_influyentes(model, top_k: int = 10):
 	return importancia.head(top_k)
 
 if __name__ == "__main__":
+
+	print("=" * 70)
+	print("EJERCICIO 2 — Inferencia con Scikit-Learn")
+	print("=" * 70)
 
 	# Carga del csv y configuración de paths de entrada/salida
 	base_dir = Path(__file__).resolve().parent

@@ -68,10 +68,6 @@ Añade aqui tu descripción y analisis:
 
 > _Escribe aquí tu respuesta_
 
-**Pregunta 3.4* — Compara los resultados con la reacción logística anterior para tu dataset y comprueba si el resultado es parecido. Explica qué ha sucedido. 
-
-> _Escribe aquí tu respuesta_
-
 ---
 
 ## Ejercicio 4 — Series Temporales
