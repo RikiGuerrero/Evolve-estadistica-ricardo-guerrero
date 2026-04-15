@@ -65,13 +65,14 @@ def limites_zscore(serie: pd.Series, z_threshold: float):
 	return li, ls, mask
 
 
-def resumen_estructural(df: pd.DataFrame):
+def resumen_estructural(df: pd.DataFrame, csv_path: Path):
 	"""Genera y muestra un resumen estructural básico del DataFrame.
 
 	Parámetros:
 		df (pd.DataFrame): Conjunto de datos de entrada sobre el que se calcula
-			el número de filas y columnas, uso de memoria, tipos de datos y
-			porcentaje de valores nulos por columna.
+			el número de filas y columnas, tipos de datos y porcentaje de
+			valores nulos por columna.
+		csv_path (Path): Ruta al archivo CSV original.
 
 	Valor de retorno:
 		dict: Diccionario con las claves `n_filas`, `n_cols`, `memoria_mb`,
@@ -79,13 +80,13 @@ def resumen_estructural(df: pd.DataFrame):
 			estructurales del DataFrame.
 	"""
 	n_filas, n_cols = df.shape
-	memoria_mb = df.memory_usage(deep=True).sum() / (1024 ** 2)
+	memoria_mb = csv_path.stat().st_size / (1024 ** 2)
 	dtypes = df.dtypes.astype(str)
 	nulos_pct = (df.isna().mean() * 100).round(2)
 
 	print(f"\nFilas: {n_filas}")
 	print(f"Columnas: {n_cols}")
-	print(f"Tamaño en memoria: {memoria_mb:.3f} MB")
+	print(f"Tamaño del CSV: {memoria_mb:.3f} MB")
 	print("\nTipos de dato (dtypes):")
 	print(dtypes)
 	print("\nPorcentaje de valores nulos por columna:")
@@ -360,7 +361,7 @@ if __name__ == "__main__":
 	print("\n" + "=" * 70)
 	print("A) RESUMEN ESTRUCTURAL")
 	print("=" * 70)
-	resumen_estructural(df)
+	resumen_estructural(df, data_path)
 	df.describe().to_csv(out_dir / REQUIRED_OUTPUTS["descriptivo_csv"], index=True)
 	print(f"\nEstadísticos descriptivos guardados en: {out_dir / REQUIRED_OUTPUTS['descriptivo_csv']}")
 
