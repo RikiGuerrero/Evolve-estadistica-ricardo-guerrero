@@ -21,7 +21,7 @@ Resultados principales:
 - **Experience_Level:** nivel 2 = 41.73% (406), nivel 1 = 38.64% (376), nivel 3 = 19.63% (191). Existe menor representación del nivel avanzado, pero dentro de un rango todavía analíticamente usable.
 
 Interpretación de los gráficos de frecuencia:
-- Los countplots confirman visualmente la ausencia de picos desproporcionados.
+- Los gráficos de barras confirman visualmente la ausencia de picos desproporcionados.
 - No aparece ninguna categoría por encima del umbral de desbalance severo (60%), por lo que no hay evidencia de sesgo estructural fuerte.
 - La ligera infrarepresentación de Experience_Level = 3 y de Workout_Frequency = 5 sugiere prudencia interpretativa en esos subgrupos, pero no justifica técnicas de corrección en esta fase descriptiva.
 
@@ -70,7 +70,7 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > **1) Estadísticos descriptivos e interpretación por grupos de variables**
 >
 > **Edad y variables fisiológicas de BPM**
-> - **Age:** media 38.6835, mediana 40, desviación típica 12.1809, IQR = 49 - 28 = 21. Se observa una dispersión moderada, con centro claro en torno a 40 años.
+> - **Age:** media 38, mediana 40, desviación típica 12.1809, IQR = 21. Se observa una dispersión moderada, con centro claro en torno a 40 años.
 > - **Max_BPM:** media 179.8839, mediana 180, desviación típica 11.5257, IQR = 20.
 > - **Avg_BPM:** media 143.7667, mediana 143, desviación típica 14.3451, IQR = 25.
 > - **Resting_BPM:** media 62.2230, mediana 62, desviación típica 7.3271, IQR = 12.
@@ -113,11 +113,11 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > - **Calories_Burned** tiene forma aproximadamente unimodal, centro alrededor de 850-950 y ligera cola a la derecha.
 >
 > **4) Boxplots de Calories_Burned por variables categóricas**
->
+>![ej1_boxplots](output/ej1_boxplots.png)
 > Hallazgos más relevantes:
 > - **Gender:** distribución relativamente similar entre grupos, con medianas cercanas y ligera diferencia a favor de hombres.
 > - **Workout_Type:** las medianas son próximas entre tipos, con cierta ventaja de HIIT/Strength y dispersión comparable.
-> - **Workout_Frequency (days/week):** patrón claramente creciente de la mediana al aumentar la frecuencia (2, 3, 4, 5 días), lo que aporta evidencia de relación positiva entre frecuencia semanal y gasto calórico.
+> - **Workout_Frequency (days/week):** patrón claramente creciente de la mediana al aumentar la frecuencia (2, 3, 4, 5 días), lo que aporta evidencia de relación positiva entre frecuencia semanal y gasto calórico por sesión.
 > - **Experience_Level:** gradiente muy marcado (1 < 2 < 3) tanto en mediana como en nivel general, indicando que mayor experiencia se asocia con mayor gasto calórico por sesión.
 >
 > Este último punto es especialmente valioso porque sugiere señal predictiva real en variables categóricas ordinales, no solo en variables continuas.
@@ -140,7 +140,7 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > - Dado que no hay evidencia de error de medición ni ruptura estructural de la distribución, conservarlos aporta más valor analítico que descartarlos.
 
 **Pregunta 1.3** — ¿Qué tres variables numéricas tienen mayor correlación (en valor absoluto) con la variable objetivo? Indica los coeficientes.
-
+>![ej1_heatmap_correlacion](output/ej1_heatmap_correlacion.png)
 > Las tres variables numéricas con mayor correlación absoluta respecto a **Calories_Burned** son:
 >
 > 1. **Session_Duration (hours):** $r = 0.9081$
@@ -175,24 +175,16 @@ En este ejercicio se construye un modelo de regresión lineal para predecir **Ca
 **Estrategia de preprocesamiento y justificación**
 
 1. **Separación de tipos de variables**
-Se detectaron variables numéricas y categóricas siguiendo el mismo criterio del Ejercicio 1. Además, se trataron como categóricas las variables numéricas discretas de pocos niveles (**Experience_Level** y **Workout_Frequency (days/week)**), ya que representan niveles/estados más que magnitudes continuas.
+Se detectaron variables numéricas y categóricas siguiendo el mismo criterio del Ejercicio 1. Por lo tanto, se trataron como categóricas las variables numéricas discretas de pocos niveles (**Experience_Level** y **Workout_Frequency (days/week)**), ya que representan niveles/estados más que magnitudes continuas.
 
 2. **Codificación de variables categóricas**
-Se aplicó **OneHotEncoder(handle_unknown="ignore")** para convertir las categorías en variables binarias sin imponer un orden artificial. Esta decisión es especialmente adecuada para un modelo lineal, ya que permite estimar efectos diferenciados por categoría.
-
-Justificación frente a alternativas:
-- **No LabelEncoder:** LabelEncoder asigna enteros (0, 1, 2, ...) y puede introducir una relación ordinal ficticia entre categorías nominales (por ejemplo, HIIT > Yoga), algo que distorsiona la interpretación en regresión lineal.
-- **OneHotEncoder vs get_dummies:** ambos generan dummies, pero OneHotEncoder se integra mejor dentro de pipelines con ColumnTransformer y evita fugas de información entre train/test.
+Se aplicó **OneHotEncoder** para convertir las categorías en variables binarias sin imponer un orden artificial. Esta decisión es especialmente adecuada para un modelo lineal, ya que permite estimar efectos diferenciados por categoría. No se opto por **LabelEncoder** debido a que asigna enteros (0, 1, 2, ...) y puede introducir una relación ordinal ficticia entre categorías nominales (por ejemplo, HIIT > Yoga), algo que distorsiona la interpretación en regresión lineal. Ni tampoco se uso **get_dummies** de pandas, ya que aunque también genera dummies, OneHotEncoder se integra mejor dentro de pipelines con ColumnTransformer y evita fugas de información entre train/test.
 
 3. **Escalado de variables numéricas**
-Se utilizó **StandardScaler** sobre las variables numéricas. En regresión lineal no cambia la calidad predictiva de forma drástica, pero sí estabiliza la escala entre predictores y hace comparables los coeficientes estandarizados dentro del pipeline.
-
-Justificación frente a MinMaxScaler:
-- **StandardScaler** centra y escala con media/desviación típica, lo que suele funcionar mejor cuando las variables tienen distribución aproximadamente continua y sin límites naturales estrictos.
-- **MinMaxScaler** depende del mínimo y máximo muestral, por lo que puede ser más sensible a valores extremos. Dado que en este dataset existen algunos outliers plausibles (pocos, pero presentes), StandardScaler ofrece una transformación más estable para este caso.
+Se utilizó **StandardScaler** sobre las variables numéricas. En regresión lineal no cambia la calidad predictiva de forma drástica, pero sí estabiliza la escala entre predictores y hace comparables los coeficientes estandarizados dentro del pipeline. **StandardScaler** centra y escala con media/desviación típica, lo que suele funcionar mejor cuando las variables tienen distribución aproximadamente continua y sin límites naturales estrictos. En cambio, **MinMaxScaler** normaliza a un rango [0, 1], lo que puede ser útil para algoritmos basados en distancias o con sensibilidad a la escala, pero en este caso no aporta ventajas claras y puede ser más sensible a valores extremos. Dado que en este dataset existen algunos outliers plausibles (pocos, pero presentes), StandardScaler ofrece una transformación más estable para este caso.
 
 4. **Columnas incluidas/excluidas**
-No se eliminaron columnas por falta de información, ya que todas las variables disponibles tienen interpretación sustantiva en el contexto de gasto calórico (REVISARdemografía, condición física, intensidad y hábitos de entrenamiento). Se mantuvo **remainder="drop"** para evitar columnas no definidas en el transformador.
+No se eliminaron columnas por falta de información, ya que todas las variables disponibles tienen interpretación sustantiva en el contexto de gasto calórico (demografía, condición física, intensidad y hábitos de entrenamiento). Se mantuvo **remainder="drop"** para evitar columnas no definidas en el transformador.
 
 5. **Partición Train/Test**
 Se aplicó **train_test_split(..., test_size=0.2, random_state=42)**:
@@ -200,7 +192,7 @@ Se aplicó **train_test_split(..., test_size=0.2, random_state=42)**:
 - Train: 778 filas (80%)
 - Test: 195 filas (20%)
 
-Esta partición permite entrenar con suficiente información y reservar un bloque robusto para evaluar generalización.
+Esta partición permite entrenar con suficiente información y reservar un bloque robusto para evaluar el modelo.
 
 6. **Estructura final del preprocesador**
 Se implementó un **ColumnTransformer** con:
@@ -232,7 +224,7 @@ Con esta configuración, el pipeline queda reproducible, trazable y alineado con
 > - **No underfitting:** si existiera infraajuste, tanto train como test tendrían desempeño pobre (errores altos y $R^2$ bajo). En este caso, ambos conjuntos muestran ajuste alto y consistente.
 >
 > **Análisis del gráfico de residuos**
->
+>![ej2_residuos](output/ej2_residuos.png)
 > El gráfico de residuos muestra una nube centrada en torno a 0 (línea horizontal), sin patrón curvilíneo dominante. Esto respalda que la estructura lineal captura adecuadamente la relación principal entre predictores y target. Se aprecia una dispersión algo mayor en valores predichos altos; este comportamiento es coherente con lo observado en el Ejercicio 1, donde **Calories_Burned** presentaba ligera cola a la derecha (asimetría positiva) y 3 outliers plausibles (0.31%, límites [87.4979, 1723.3470]). Por tanto, esa mayor dispersión en la zona alta parece asociada a la propia estructura del target más que a un fallo grave del modelo.
 >
 > **Variables más influyentes (magnitud de coeficientes)**
@@ -246,6 +238,12 @@ Con esta configuración, el pipeline queda reproducible, trazable y alineado con
 > - **Weight (kg):** -21.7642
 >
 > La variable más influyente es **Session_Duration (hours)**, lo cual es totalmente coherente con el Ejercicio 1, donde ya aparecía como la correlación más fuerte con el target ($r = 0.9081$). También encaja que variables relacionadas con intensidad/condición fisiológica (Avg_BPM, composición corporal) contribuyan de forma relevante.
+>
+> **Análisis de sensibilidad sin Session_Duration (complementario)**
+>
+> Para comprobar si el rendimiento dependía en exceso de una sola variable, se estimó una variante del modelo excluyendo **Session_Duration (hours)**. El desempeño cayó de forma importante: en test, el $R^2$ pasó de **0.9802** a **0.6716**, el MAE de **30.35** a **134.99** y el RMSE de **40.60** a **165.53**.
+>
+> Esta caída confirma que Session_Duration aporta una señal predictiva central, algo esperable por la propia lógica del problema (a mayor tiempo de entrenamiento, mayor gasto calórico). No obstante, el experimento también permite extraer información útil: al retirar esa variable, ganan peso relativo otros predictores como **Experience_Level**, **Avg_BPM** y **Age**, que ayudan a interpretar factores secundarios del gasto energético.
 >
 > **Conexión con el Ejercicio 1**
 >
