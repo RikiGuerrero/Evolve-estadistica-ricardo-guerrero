@@ -11,7 +11,7 @@ En este ejercicio se realiza un análisis descriptivo en tres niveles: primero, 
 La evaluación de distribuciones se apoya en histogramas con curva KDE y en boxplots, mientras que la interpretación cuantitativa se sustenta en media, mediana, desviación típica, varianza, cuartiles e IQR. Además, se incluyen asimetría y curtosis para describir la forma de la distribución de la variable objetivo. Este enfoque permite justificar de forma estadística y transparente las decisiones posteriores de modelado.
 
 **Subapartado: análisis de variables categóricas (frecuencias, gráficos y desbalance)**
-
+![ej1_categoricas](output/ej1_categoricas.png)
 Como complemento al análisis numérico, se evaluaron las cuatro variables categóricas detectadas mediante frecuencias absolutas/relativas y gráficos de barras, con el objetivo de comprobar si existe desbalance que pudiera condicionar la interpretación o el modelado posterior.
 
 Resultados principales:
@@ -105,7 +105,7 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > - En conjunto, la variable objetivo no presenta una deformación severa y mantiene buena calidad para modelado de regresión.
 >
 > **3) Lectura de histogramas con KDE**
->
+>![ej1_histogramas](output/ej1_histogramas.png)
 > Los histogramas con KDE confirman lo observado en los estadísticos:
 > - **Age, BPM y Height** muestran perfiles bastante equilibrados, sin picos extremos aislados.
 > - **Weight y BMI** presentan mayor extensión de la cola derecha, coherente con algunos individuos de mayor masa corporal.
