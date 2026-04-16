@@ -141,24 +141,126 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 
 **Pregunta 1.3** — ¿Qué tres variables numéricas tienen mayor correlación (en valor absoluto) con la variable objetivo? Indica los coeficientes.
 
-> _Escribe aquí tu respuesta_
+> Las tres variables numéricas con mayor correlación absoluta respecto a **Calories_Burned** son:
+>
+> 1. **Session_Duration (hours):** $r = 0.9081$
+> 2. **Fat_Percentage:** $r = -0.5976$ (en valor absoluto, $|r| = 0.5976$)
+> 3. **Water_Intake (liters):** $r = 0.3569$
+>
+> **Interpretación:**
+> - **Session_Duration (hours)** presenta una correlación positiva muy alta con la variable objetivo, lo que indica que, en promedio, sesiones más largas se asocian claramente con mayor gasto calórico.
+> - **Fat_Percentage** muestra una correlación negativa moderada-alta: a mayor porcentaje de grasa corporal, menor tendencia a quemar calorias por sesión, manteniendo el resto de factores sin controlar.
+> - **Water_Intake (liters)** tiene una correlación positiva moderada, coherente con perfiles de entrenamiento más intensos o de mayor duración.
+>
+> El heatmap es consistente con estos resultados y permite identificar con claridad tanto la intensidad como el signo de las relaciones.
+>
+> **Multicolinealidad (umbral $|r| > 0.9$):**
+> - Se detecta el par **Session_Duration (hours) vs Calories_Burned** con $r = 0.9081$.
+>
+> Este resultado confirma una relación muy fuerte entre una variable predictora y el target (lo cual es deseable para predicción). En cambio, no se observan pares de predictores con $|r| > 0.9$, por lo que no hay evidencia de multicolinealidad severa entre variables explicativas en este criterio.
 
 **Pregunta 1.4** — ¿Hay valores nulos en el dataset? ¿Qué porcentaje representan y cómo los has tratado?
 
-> _Escribe aquí tu respuesta_
+> No se detectaron valores nulos en el dataset. El porcentaje de nulos por columna es **0.0%** en las 15 variables (incluida la variable objetivo), por lo que el porcentaje total de datos faltantes también es **0%**.
+>
+> En consecuencia, no fue necesario aplicar técnicas de tratamiento de nulos (eliminación de registros, imputación estadística ni imputación basada en modelos). Esto es positivo para la calidad del análisis, ya que evita introducir sesgos por imputación y permite trabajar directamente con el conjunto completo de 973 observaciones.
 
 ---
 
 ## Ejercicio 2 — Inferencia con Scikit-Learn
 
 ---
-Añade aqui tu descripción y analisis:
+En este ejercicio se construye un modelo de regresión lineal para predecir **Calories_Burned** y se evalúa su capacidad de generalización sobre datos no vistos. El objetivo no es solo reportar métricas, sino validar que el pipeline de preprocesamiento sea coherente con la naturaleza de las variables y con los hallazgos del Ejercicio 1.
+
+**Estrategia de preprocesamiento y justificación**
+
+1. **Separación de tipos de variables**
+Se detectaron variables numéricas y categóricas siguiendo el mismo criterio del Ejercicio 1. Además, se trataron como categóricas las variables numéricas discretas de pocos niveles (**Experience_Level** y **Workout_Frequency (days/week)**), ya que representan niveles/estados más que magnitudes continuas.
+
+2. **Codificación de variables categóricas**
+Se aplicó **OneHotEncoder(handle_unknown="ignore")** para convertir las categorías en variables binarias sin imponer un orden artificial. Esta decisión es especialmente adecuada para un modelo lineal, ya que permite estimar efectos diferenciados por categoría.
+
+Justificación frente a alternativas:
+- **No LabelEncoder:** LabelEncoder asigna enteros (0, 1, 2, ...) y puede introducir una relación ordinal ficticia entre categorías nominales (por ejemplo, HIIT > Yoga), algo que distorsiona la interpretación en regresión lineal.
+- **OneHotEncoder vs get_dummies:** ambos generan dummies, pero OneHotEncoder se integra mejor dentro de pipelines con ColumnTransformer y evita fugas de información entre train/test.
+
+3. **Escalado de variables numéricas**
+Se utilizó **StandardScaler** sobre las variables numéricas. En regresión lineal no cambia la calidad predictiva de forma drástica, pero sí estabiliza la escala entre predictores y hace comparables los coeficientes estandarizados dentro del pipeline.
+
+Justificación frente a MinMaxScaler:
+- **StandardScaler** centra y escala con media/desviación típica, lo que suele funcionar mejor cuando las variables tienen distribución aproximadamente continua y sin límites naturales estrictos.
+- **MinMaxScaler** depende del mínimo y máximo muestral, por lo que puede ser más sensible a valores extremos. Dado que en este dataset existen algunos outliers plausibles (pocos, pero presentes), StandardScaler ofrece una transformación más estable para este caso.
+
+4. **Columnas incluidas/excluidas**
+No se eliminaron columnas por falta de información, ya que todas las variables disponibles tienen interpretación sustantiva en el contexto de gasto calórico (REVISARdemografía, condición física, intensidad y hábitos de entrenamiento). Se mantuvo **remainder="drop"** para evitar columnas no definidas en el transformador.
+
+5. **Partición Train/Test**
+Se aplicó **train_test_split(..., test_size=0.2, random_state=42)**:
+- Total: 973 filas
+- Train: 778 filas (80%)
+- Test: 195 filas (20%)
+
+Esta partición permite entrenar con suficiente información y reservar un bloque robusto para evaluar generalización.
+
+6. **Estructura final del preprocesador**
+Se implementó un **ColumnTransformer** con:
+- Rama numérica: StandardScaler sobre 10 variables numéricas
+- Rama categórica: OneHotEncoder sobre 4 variables categóricas
+
+Con esta configuración, el pipeline queda reproducible, trazable y alineado con buenas prácticas de inferencia supervisada.
 
 ---
 
 **Pregunta 2.1** — Indica los valores de MAE, RMSE y R² de la regresión lineal sobre el test set. ¿El modelo funciona bien? ¿Por qué?
 
-> _Escribe aquí tu respuesta_
+> **Métricas en test (n = 195):**
+> - **MAE:** 30.3485
+> - **RMSE:** 40.6043
+> - **R²:** 0.9802
+>
+> **Métricas en train (n = 778):**
+> - **MAE:** 29.5852
+> - **RMSE:** 38.9085
+> - **R²:** 0.9790
+>
+> **Evaluación del rendimiento del modelo**
+>
+> El modelo funciona **muy bien**. El valor de $R^2 = 0.9802$ en test indica que explica aproximadamente el 98% de la variabilidad de la variable objetivo en datos no vistos. Además, los errores absolutos y cuadráticos (MAE y RMSE) son bajos en relación con la escala de **Calories_Burned** observada en el Ejercicio 1.
+>
+> La comparación train vs test no muestra señales de **overfitting** ni de **underfitting**:
+> - **No overfitting:** si existiera sobreajuste, esperaríamos métricas claramente mejores en train que en test. Aquí las diferencias son pequeñas y estables (MAE: 29.5852 vs 30.3485; RMSE: 38.9085 vs 40.6043; $R^2$: 0.9790 vs 0.9802), lo que indica buena generalización.
+> - **No underfitting:** si existiera infraajuste, tanto train como test tendrían desempeño pobre (errores altos y $R^2$ bajo). En este caso, ambos conjuntos muestran ajuste alto y consistente.
+>
+> **Análisis del gráfico de residuos**
+>
+> El gráfico de residuos muestra una nube centrada en torno a 0 (línea horizontal), sin patrón curvilíneo dominante. Esto respalda que la estructura lineal captura adecuadamente la relación principal entre predictores y target. Se aprecia una dispersión algo mayor en valores predichos altos; este comportamiento es coherente con lo observado en el Ejercicio 1, donde **Calories_Burned** presentaba ligera cola a la derecha (asimetría positiva) y 3 outliers plausibles (0.31%, límites [87.4979, 1723.3470]). Por tanto, esa mayor dispersión en la zona alta parece asociada a la propia estructura del target más que a un fallo grave del modelo.
+>
+> **Variables más influyentes (magnitud de coeficientes)**
+>
+> Entre los coeficientes de mayor impacto aparecen:
+> - **Session_Duration (hours):** +240.4092
+> - **Avg_BPM:** +88.6157
+> - **Age:** -40.3406
+> - **Gender_Male / Gender_Female:** +/-39.7869
+> - **BMI:** +22.4929
+> - **Weight (kg):** -21.7642
+>
+> La variable más influyente es **Session_Duration (hours)**, lo cual es totalmente coherente con el Ejercicio 1, donde ya aparecía como la correlación más fuerte con el target ($r = 0.9081$). También encaja que variables relacionadas con intensidad/condición fisiológica (Avg_BPM, composición corporal) contribuyan de forma relevante.
+>
+> **Conexión con el Ejercicio 1**
+>
+> Los hallazgos del análisis descriptivo fueron clave para interpretar el resultado del modelo:
+> - La fuerte relación entre duración de sesión y calorías (detectada en correlaciones y boxplots) anticipaba un modelo con alta capacidad explicativa.
+> - La ausencia de nulos y el bajo nivel de outliers facilitaron un entrenamiento estable sin necesidad de imputaciones ni depuraciones agresivas.
+> - El comportamiento razonablemente balanceado de las categóricas permitió codificación one-hot sin sesgos evidentes por clases dominantes.
+>
+> **Mejoras concretas propuestas**
+>
+> Dado el rendimiento actual (muy alto y estable), no son imprescindibles cambios estructurales. Como mejoras opcionales y realistas para este dataset:
+>
+> 1. Validar estabilidad con **K-Fold** para confirmar que el buen resultado no depende del split concreto.
+> 2. Contrastar una variante con **Ridge** para comprobar si se mantiene el rendimiento con coeficientes algo más estables.
+> 3. Reportar métricas por tramos de **Calories_Burned** (bajo/medio/alto) para verificar si la ligera mayor dispersión en valores altos afecta de forma práctica a un subgrupo concreto.
 
 
 ---
