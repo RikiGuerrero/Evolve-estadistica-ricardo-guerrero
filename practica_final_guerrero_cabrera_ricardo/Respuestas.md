@@ -386,28 +386,68 @@ Como extensión adicional, también sería útil revisar residuos por subgrupos 
 ## Ejercicio 3 — Regresión Lineal Múltiple en NumPy
 
 ---
-Añade aqui tu descripción y analisis:
+En este ejercicio se implementa una regresión lineal múltiple **desde cero con NumPy**, aplicando la solución cerrada de Mínimos Cuadrados Ordinarios (OLS) sin usar sklearn para el ajuste. El objetivo es entender el procedimiento matemático completo del modelo: construcción de la matriz de diseño, estimación de coeficientes, generación de predicciones y evaluación del rendimiento con MAE, RMSE y $R^2$.
+
+Para validar la implementación, se utilizan datos sintéticos con coeficientes reales conocidos ($\beta_0=5$, $\beta_1=2$, $\beta_2=-1$, $\beta_3=0.5$), de forma que se pueda comprobar si los coeficientes estimados por la función se acercan a los valores esperados en presencia de ruido gaussiano.
 
 ---
 
 **Pregunta 3.1** — Explica en tus propias palabras qué hace la fórmula β = (XᵀX)⁻¹ Xᵀy y por qué es necesario añadir una columna de unos a la matriz X.
 
-> _Escribe aquí tu respuesta_
+> La fórmula
+>
+> $$\beta = (X^TX)^{-1}X^Ty$$
+>
+> calcula los coeficientes del modelo lineal que **minimizan la suma de errores cuadrados** entre los valores reales $y$ y las predicciones $\hat{y}$. En otras palabras, encuentra la recta/plano, dependiendo del numero de coeficientes, que mejor se ajusta a los datos según el criterio de mínimos cuadrados. Al final queremos encontrar los valores de $\beta$ que hacen que las predicciones $\hat{y} = X\beta$ estén lo más cerca posible de los valores reales $y$.
+>
+> El proceso de mínimos cuadrados se basa en minimar la suma de errores al cuadrado: la diferencia entre lo que el modelo predice ($\hat{y}$) y lo que realmente se observa ($y$). Si elevas al cuadrado, penalizas más los errores grandes, lo que hace que el modelo se ajuste mejor en la mayoría de los puntos.
+>
+> Al final, nos permite obtener las incognitas $\beta$ de la ecuación de la recta/plano:
+>$$\hat{y} = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_3 x_3$$
+>
+> En la implementación de este ejercicio (sin sklearn) se siguieron tres ideas clave:
+>
+> 1. **Columna de unos** es como un truco de implementación: sin ella, el modelo no tiene forma de aprender el punto de partida (el intercepto), y quedaría anclado al origen artificialmente. Con ella, el intercepto se trata igual que cualquier otro coeficiente, y el álgebra matricial funciona de una pieza, asi permite el producto entre matrices.
+> 2. **Producto matricial:** se construyen $X^TX$ y $X^Ty$ con producto matricial, que son los dos ingredientes que necesita la formual: como se relacionan las variables entre sí $X^TX$ y cómo se relacionan con el target $X^Ty$.
+> 3. **Resolución del sistema:** se resuelve el sistema para obtener $\beta$ (en este caso con inversión matricial), lo que devuelve directamente los coeficientes estimados $[\beta_0, \beta_1, \beta_2, \beta_3]$.
+>
+> Después, con esos coeficientes, finalmente se predice sobre test usando $\hat{y}=X_{test}\beta$ (incluyendo también su columna de unos).
 
 **Pregunta 3.2** — Copia aquí los cuatro coeficientes ajustados por tu función y compáralos con los valores de referencia del enunciado.
 
 | Parametro | Valor real | Valor ajustado |
 |-----------|-----------|----------------|
-| β₀        | 5.0       |                |
-| β₁        | 2.0       |                |
-| β₂        | -1.0      |                |
-| β₃        | 0.5       |                |
+| β₀        | 5.0       | 4.86499486     |
+| β₁        | 2.0       | 2.06361770     |
+| β₂        | -1.0      | -1.11703839    |
+| β₃        | 0.5       | 0.43851694     |
 
-> _Escribe aquí tu respuesta_
+> Los coeficientes ajustados son cercanos a los valores reales de referencia, lo que confirma que la función implementada está estimando correctamente el modelo OLS con NumPy.
+>
+> Interpretación breve de cada parámetro:
+> - **$\beta_0 = 4.8650$ (intercepto):** valor base esperado de $y$ cuando todas las variables predictoras valen 0.
+> - **$\beta_1 = 2.0636$:** efecto positivo de la feature 1; por cada unidad que aumenta, $y$ aumenta en torno a 2.06 unidades (manteniendo el resto constante).
+> - **$\beta_2 = -1.1170$:** efecto negativo de la feature 2; por cada unidad que aumenta, $y$ disminuye aproximadamente 1.12 unidades.
+> - **$\beta_3 = 0.4385$:** efecto positivo moderado de la feature 3; incrementa $y$ en torno a 0.44 unidades por cada unidad adicional.
+>
+> Las diferencias respecto al valor real son pequeñas y esperables por el término de ruido introducido en los datos sintéticos. Por tanto, el ajuste es coherente con el enunciado.
+>
+>![ej3_predicciones](output/ej3_predicciones.png)
+> En el gráfico de predicciones se observa que la mayoría de puntos se agrupan alrededor de la diagonal $y=x$, lo que indica buena capacidad predictiva global. La nube presenta cierta dispersión en algunos tramos (especialmente en valores medios-altos), pero no se aprecia un sesgo sistemático fuerte. En conjunto, el patrón visual respalda que el modelo capta bien la relación lineal subyacente.
 
 **Pregunta 3.3** — ¿Qué valores de MAE, RMSE y R² has obtenido? ¿Se aproximan a los de referencia?
 
-> _Escribe aquí tu respuesta_
+> Métricas obtenidas en test:
+> - **MAE:** 1.1665
+> - **RMSE:** 1.4612
+> - **$R^2$:** 0.6897
+>
+> Comparación con referencias:
+> - **MAE de referencia:** $\approx 1.20 \ (\pm 0.20)$ → **Sí, se ajusta**.
+> - **RMSE de referencia:** $\approx 1.50 \ (\pm 0.20)$ → **Sí, se ajusta**.
+> - **$R^2$ de referencia:** $\approx 0.80 \ (\pm 0.05)$ → **No entra en el rango orientativo**, ya que queda aproximadamente 0.12 por debajo.
+>
+> Este desfase en $R^2$ se ha verificado y **no corresponde a un error de implementación**: al repetir el ejercicio con sklearn se obtiene el mismo resultado. Por tanto, la diferencia debe interpretarse como variación debida a la muestra concreta y al ruido aleatorio generado, mientras que la calidad del ajuste sigue siendo razonable y consistente con el comportamiento observado en MAE/RMSE y en el gráfico Real vs. Predicho.
 
 ---
 

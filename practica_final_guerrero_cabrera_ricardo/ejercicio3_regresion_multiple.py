@@ -48,10 +48,11 @@ os.makedirs("output", exist_ok=True)
 
 def regresion_lineal_multiple(X_train, y_train, X_test):
     """
-    Ajusta un modelo de Regresión Lineal Múltiple usando OLS y devuelve
-    las predicciones sobre el conjunto de test.
+    Ajusta un modelo de regresión lineal múltiple mediante mínimos
+    cuadrados ordinarios (OLS) y genera predicciones para un conjunto
+    de datos de entrada.
 
-    La solución analítica es:
+    La solución analítica utilizada es:
         β = (XᵀX)⁻¹ Xᵀy
 
     Parámetros
@@ -67,16 +68,10 @@ def regresion_lineal_multiple(X_train, y_train, X_test):
     Retorna
     -------
     coefs : np.ndarray de forma (p+1,)
-        Vector de coeficientes ajustados [β₀, β₁, ..., βₚ].
-        β₀ es el intercepto (término independiente).
+        Vector de coeficientes ajustados [β₀, β₁, ..., βₚ], donde β₀
+        corresponde al intercepto.
     y_pred : np.ndarray de forma (n_test,)
         Predicciones del modelo sobre X_test.
-
-    Pistas
-    ------
-    - Usa np.hstack o np.column_stack para añadir la columna de unos (intercepto).
-    - Usa np.linalg.inv o np.linalg.lstsq para resolver el sistema.
-    - np.linalg.lstsq es numéricamente más estable que invertir directamente.
     """
 
     # TODO: Paso 1 — Añadir columna de unos a X_train para el intercepto β₀
@@ -102,7 +97,7 @@ def regresion_lineal_multiple(X_train, y_train, X_test):
 
 def calcular_mae(y_real, y_pred):
     """
-    Calcula el Mean Absolute Error (MAE).
+    Calcula el error absoluto medio (MAE).
 
         MAE = (1/n) * Σ |y_real - y_pred|
 
@@ -113,7 +108,8 @@ def calcular_mae(y_real, y_pred):
 
     Retorna
     -------
-    float — Valor del MAE
+    float
+        Valor del MAE.
     """
     # TODO: Implementa el MAE sin usar sklearn
     mae = np.mean(np.abs(y_real - y_pred))
@@ -122,7 +118,7 @@ def calcular_mae(y_real, y_pred):
 
 def calcular_rmse(y_real, y_pred):
     """
-    Calcula el Root Mean Squared Error (RMSE).
+    Calcula la raíz del error cuadrático medio (RMSE).
 
         RMSE = sqrt((1/n) * Σ (y_real - y_pred)²)
 
@@ -133,7 +129,8 @@ def calcular_rmse(y_real, y_pred):
 
     Retorna
     -------
-    float — Valor del RMSE
+    float
+        Valor del RMSE.
     """
     # TODO: Implementa el RMSE sin usar sklearn
     rmse = np.sqrt(np.mean((y_real - y_pred) ** 2))
@@ -155,7 +152,8 @@ def calcular_r2(y_real, y_pred):
 
     Retorna
     -------
-    float — Valor del R² (entre -∞ y 1; cuanto más cercano a 1, mejor)
+    float
+        Valor del R² (entre -∞ y 1). Cuanto más cercano a 1, mejor.
     """
     # TODO: Implementa el R² sin usar sklearn
     ss_res = np.sum((y_real - y_pred) ** 2)
@@ -170,7 +168,8 @@ def calcular_r2(y_real, y_pred):
 
 def graficar_real_vs_predicho(y_real, y_pred, ruta_salida="output/ej3_predicciones.png"):
     """
-    Genera un scatter plot de Valores Reales vs. Valores Predichos.
+    Genera un gráfico de dispersión de valores reales frente a valores
+    predichos y lo guarda.
 
     Un modelo perfecto produciría todos los puntos sobre la diagonal y=x.
     La dispersión alrededor de esa línea representa el error del modelo.
