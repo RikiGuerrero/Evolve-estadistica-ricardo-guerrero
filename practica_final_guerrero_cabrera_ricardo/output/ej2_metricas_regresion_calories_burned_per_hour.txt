@@ -1,0 +1,5 @@
+Ejercicio 2 - Metricas Regresion Lineal (Calories Burned Per Hour)
+==================================================
+MAE: 15.489932
+RMSE: 19.060978
+R2: 0.956373

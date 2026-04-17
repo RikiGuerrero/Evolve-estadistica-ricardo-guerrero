@@ -8,38 +8,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from pathlib import Path
+from ejercicio1_descriptivo import detectar_columnas, etiqueta_target, sufijo_archivo
 
-TARGET = "Calories_Burned"
+TARGETS = ["Calories_Burned", "Calories_Burned_Per_Hour"]
 TEST_SIZE = 0.20
 RANDOM_STATE = 42
 REQUIRED_OUTPUTS = {
-	"metricas_txt": "ej2_metricas_regresion.txt",
-	"residuos_png": "ej2_residuos.png",
+	"metricas_txt": "ej2_metricas_regresion_{target}.txt",
+	"residuos_png": "ej2_residuos_{target}.png",
 }
-
-
-def detectar_columnas(df: pd.DataFrame):
-	"""Identifica columnas numéricas y categóricas en un DataFrame.
-
-	Parámetros:
-		df (pd.DataFrame): Conjunto de datos de entrada a partir del cual se
-			clasifican variables por tipo. Además, las columnas numéricas con
-			10 o menos valores únicos se tratan como categóricas.
-
-	Valor de retorno:
-		tuple[list[str], list[str]]: Tupla con dos listas en este orden:
-			columnas numéricas continuas y columnas categóricas detectadas.
-	"""
-	cat_cols = df.select_dtypes(include=["object", "category", "bool", "string"]).columns.tolist()
-
-	# Tratar numéricas discretas con pocos niveles como categóricas (p.ej. Experience_Level)
-	for col in df.select_dtypes(include=[np.number]).columns:
-		if col not in cat_cols and df[col].nunique() <= 10:
-			cat_cols.append(col)
-
-	num_cols = [c for c in df.select_dtypes(include=[np.number]).columns if c not in cat_cols]
-	return num_cols, cat_cols
-
 
 def crear_preprocesador(num_cols: list[str], cat_cols: list[str]):
 	"""Construye el preprocesador para variables numéricas y categóricas.
@@ -64,12 +41,13 @@ def crear_preprocesador(num_cols: list[str], cat_cols: list[str]):
 	return preprocessor
 
 
-def preprocesamiento(df: pd.DataFrame):
+def preprocesamiento(df: pd.DataFrame, target: str):
 	"""Realiza preprocesado básico y división train/test.
 
 	Parámetros:
 		df (pd.DataFrame): DataFrame completo con variables predictoras y la
-			variable objetivo definida en TARGET.
+			variable objetivo definida en target.
+		target (str): Nombre de la variable objetivo a modelar.
 
 	Valor de retorno:
 		tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, ColumnTransformer]:
@@ -77,11 +55,12 @@ def preprocesamiento(df: pd.DataFrame):
 			(X_test, y_test) y el preprocesador configurado.
 	"""
 
-	if TARGET not in df.columns:
-		raise ValueError(f"La variable objetivo {TARGET} no existe en el dataset.")
+	if target not in df.columns:
+		raise ValueError(f"La variable objetivo {target} no existe en el dataset.")
 
-	X = df.drop(columns=[TARGET])
-	y = df[TARGET]
+	columnas_excluir = [col for col in TARGETS if col in df.columns and col != target]
+	X = df.drop(columns=[target] + columnas_excluir)
+	y = df[target]
 	num_cols, cat_cols = detectar_columnas(X)
 
 	X_train, X_test, y_train, y_test = train_test_split(
@@ -96,6 +75,7 @@ def preprocesamiento(df: pd.DataFrame):
 	print(f"Test: {X_test.shape[0]} filas ({100 * TEST_SIZE:.0f}%)")
 	print(f"Variables numericas: {len(num_cols)}")
 	print(f"Variables categoricas: {len(cat_cols)}")
+	print(f"Target modelado: {target}")
 
 	preprocessor = crear_preprocesador(num_cols, cat_cols)
 
@@ -159,7 +139,7 @@ def evaluar_modelo(model, X_train, y_train, X_test, y_test):
 	}
 
 
-def grafico_residuos(y_test, y_pred, out_dir: Path):
+def grafico_residuos(y_test, y_pred, out_dir: Path, target: str):
 	"""Genera y guarda el gráfico de residuos del modelo.
 
 	Parámetros:
@@ -167,6 +147,7 @@ def grafico_residuos(y_test, y_pred, out_dir: Path):
 		y_pred (np.ndarray | pd.Series): Valores predichos para el conjunto de
 			prueba.
 		out_dir (Path): Directorio donde se guarda la imagen del gráfico.
+		target (str): Variable objetivo para incorporar su nombre en la salida.
 
 	Valor de retorno:
 		None: La función guarda la figura y muestra por consola la
@@ -179,14 +160,15 @@ def grafico_residuos(y_test, y_pred, out_dir: Path):
 	plt.axhline(y=0, color="red", linestyle="--", linewidth=1.5)
 	plt.xlabel("Valores predichos")
 	plt.ylabel("Residuos (real - predicho)")
-	plt.title("Grafico de residuos - Regresion Lineal")
+	plt.title(f"Grafico de residuos - Regresion Lineal ({etiqueta_target(target)})")
 	plt.tight_layout()
-	plt.savefig(out_dir / REQUIRED_OUTPUTS["residuos_png"], dpi=180)
-	print(f"Grafico de residuos guardado en: {out_dir / REQUIRED_OUTPUTS['residuos_png']}")
+	ruta = out_dir / REQUIRED_OUTPUTS["residuos_png"].format(target=sufijo_archivo(target))
+	plt.savefig(ruta, dpi=180)
+	print(f"Grafico de residuos guardado en: {ruta}")
 	plt.close()
 
 
-def guardar_metricas(mae: float, rmse: float, r2: float, out_dir: Path):
+def guardar_metricas(mae: float, rmse: float, r2: float, out_dir: Path, target: str):
 	"""Guarda las métricas principales del modelo.
 
 	Parámetros:
@@ -195,14 +177,15 @@ def guardar_metricas(mae: float, rmse: float, r2: float, out_dir: Path):
 		r2 (float): Coeficiente de determinación calculado en test.
 		out_dir (Path): Directorio de salida donde se escribe el archivo de
 			métricas.
+		target (str): Variable objetivo para incorporar su nombre en la salida.
 
 	Valor de retorno:
 		None: La función crea el archivo de métricas y reporta su
 			ruta por consola.
 	"""
-	ruta = out_dir / REQUIRED_OUTPUTS["metricas_txt"]
+	ruta = out_dir / REQUIRED_OUTPUTS["metricas_txt"].format(target=sufijo_archivo(target))
 	with open(ruta, "w", encoding="utf-8") as f:
-		f.write("Ejercicio 2 - Metricas Regresion Lineal\n")
+		f.write(f"Ejercicio 2 - Metricas Regresion Lineal ({etiqueta_target(target)})\n")
 		f.write("=" * 50 + "\n")
 		f.write(f"MAE: {mae:.6f}\n")
 		f.write(f"RMSE: {rmse:.6f}\n")
@@ -243,37 +226,38 @@ if __name__ == "__main__":
 
 	# Carga del csv y configuración de paths de entrada/salida
 	base_dir = Path(__file__).resolve().parent
-	data_path = base_dir / "data" / "gym_members_exercise_tracking.csv"
+	data_path = base_dir / "data" / "dataset_enriquecido.csv"
 	out_dir = base_dir / "output"
 	out_dir.mkdir(parents=True, exist_ok=True)
 	if not data_path.exists():
 		raise FileNotFoundError(f"No se encuentra el dataset en: {data_path}")
 	df = pd.read_csv(data_path)
 
-	print("=" * 70)
-	print("PREPROCESAMIENTO")
-	print("=" * 70)
-	X_train, X_test, y_train, y_test, preprocessor = preprocesamiento(df)
+	for target in TARGETS:
+		print("=" * 70)
+		print(f"PREPROCESAMIENTO - {etiqueta_target(target)}")
+		print("=" * 70)
+		X_train, X_test, y_train, y_test, preprocessor = preprocesamiento(df, target)
 
-	print("\n" + "=" * 70)
-	print("MODELO - REGRESION LINEAL")
-	print("=" * 70)
-	modelo = entrenar_modelo(X_train, y_train, preprocessor)
-	resultados = evaluar_modelo(modelo, X_train, y_train, X_test, y_test)
-	y_pred_test = resultados["y_pred_test"]
-	grafico_residuos(y_test, y_pred_test, out_dir)
-	guardar_metricas(resultados['test']['mae'], resultados['test']['rmse'], resultados['test']['r2'], out_dir)
+		print("\n" + "=" * 70)
+		print(f"MODELO - REGRESION LINEAL ({etiqueta_target(target)})")
+		print("=" * 70)
+		modelo = entrenar_modelo(X_train, y_train, preprocessor)
+		resultados = evaluar_modelo(modelo, X_train, y_train, X_test, y_test)
+		y_pred_test = resultados["y_pred_test"]
+		grafico_residuos(y_test, y_pred_test, out_dir, target)
+		guardar_metricas(resultados['test']['mae'], resultados['test']['rmse'], resultados['test']['r2'], out_dir, target)
 
-	print("\n--- METRICAS TRAIN ---")
-	print(f"MAE:  {resultados['train']['mae']:.4f}")
-	print(f"RMSE: {resultados['train']['rmse']:.4f}")
-	print(f"R2:   {resultados['train']['r2']:.4f}")
-	
-	print("\n--- METRICAS TEST ---")
-	print(f"MAE:  {resultados['test']['mae']:.4f}")
-	print(f"RMSE: {resultados['test']['rmse']:.4f}")
-	print(f"R2:   {resultados['test']['r2']:.4f}")
+		print("\n--- METRICAS TRAIN ---")
+		print(f"MAE:  {resultados['train']['mae']:.4f}")
+		print(f"RMSE: {resultados['train']['rmse']:.4f}")
+		print(f"R2:   {resultados['train']['r2']:.4f}")
 
-	influyentes = variables_mas_influyentes(modelo, top_k=10)
-	print("\nVariables mas influyentes:")
-	print(influyentes[["variable", "coeficiente"]].to_string(index=False))
+		print("\n--- METRICAS TEST ---")
+		print(f"MAE:  {resultados['test']['mae']:.4f}")
+		print(f"RMSE: {resultados['test']['rmse']:.4f}")
+		print(f"R2:   {resultados['test']['r2']:.4f}")
+
+		influyentes = variables_mas_influyentes(modelo, top_k=10)
+		print("\nVariables mas influyentes:")
+		print(influyentes[["variable", "coeficiente"]].to_string(index=False))

@@ -1,4 +1,4 @@
-Ejercicio 2 - Metricas Regresion Lineal
+Ejercicio 2 - Metricas Regresion Lineal (Calories Burned)
 ==================================================
 MAE: 30.348460
 RMSE: 40.604281

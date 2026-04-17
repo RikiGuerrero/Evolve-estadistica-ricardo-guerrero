@@ -5,15 +5,29 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-TARGET = "Calories_Burned"
+TARGETS = ["Calories_Burned", "Calories_Burned_Per_Hour"]
+TARGET_LABELS = {
+	"Calories_Burned": "Calories Burned",
+	"Calories_Burned_Per_Hour": "Calories Burned Per Hour"
+}
 REQUIRED_OUTPUTS = {
+	"dataset_enriquecido_csv": "dataset_enriquecido.csv",
 	"descriptivo_csv": "ej1_descriptivo.csv",
 	"histogramas_png": "ej1_histogramas.png",
-	"boxplots_png": "ej1_boxplots.png",
+	"boxplots_png": "ej1_boxplots_{target}.png",
 	"heatmap_png": "ej1_heatmap_correlacion.png",
 	"categoricas_png": "ej1_categoricas.png",
 }
 
+
+def etiqueta_target(target: str):
+	"""Devuelve una etiqueta legible para un target dado."""
+	return TARGET_LABELS.get(target, target)
+
+
+def sufijo_archivo(target: str):
+	"""Convierte el nombre de una columna en un sufijo seguro para archivo."""
+	return target.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
 
 def detectar_columnas(df: pd.DataFrame):
 	"""Identifica columnas numéricas y categóricas en un DataFrame.
@@ -101,18 +115,21 @@ def resumen_estructural(df: pd.DataFrame, csv_path: Path):
 	}
 
 
-def estadisticos(df: pd.DataFrame, num_cols: list[str]):
+def estadisticos(df: pd.DataFrame, num_cols: list[str], targets: list[str]):
 	"""Calcula y muestra estadísticas descriptivas de variables numéricas.
 
 	Parámetros:
 		df (pd.DataFrame): DataFrame de entrada que contiene las variables
-			numéricas y la variable objetivo definida en TARGET.
+			numéricas y las variables objetivo indicadas en targets.
 		num_cols (list[str]): Lista de nombres de columnas numéricas sobre las
 			que se calculan media, mediana, moda, dispersión y cuartiles.
+		targets (list[str]): Lista de columnas objetivo para las que se calcula
+			IQR, asimetría y curtosis.
 
 	Valor de retorno:
 		None: La función imprime por pantalla la tabla de estadísticos
-			descriptivos y las métricas de IQR, asimetría y curtosis de TARGET.
+			descriptivos y las métricas de IQR, asimetría y curtosis de cada
+			target.
 	"""
 	# Estadísticos solicitados
 	stats_df = pd.DataFrame({
@@ -128,19 +145,25 @@ def estadisticos(df: pd.DataFrame, num_cols: list[str]):
 		"maximo": df[num_cols].max(),
 	}).round(4)
 
-	q1_t = df[TARGET].quantile(0.25)
-	q3_t = df[TARGET].quantile(0.75)
-	iqr_target = q3_t - q1_t
-	skew_target = df[TARGET].skew()
-	kurt_target = df[TARGET].kurtosis()
-
 	print(f"\n{stats_df}")
-	print(f"\nIQR de {TARGET}: {iqr_target:.4f}")
-	print(f"Asimetria (skewness) de {TARGET}: {skew_target:.4f}")
-	print(f"Curtosis de {TARGET}: {kurt_target:.4f}")
+
+	for target in targets:
+		if target not in df.columns:
+			raise ValueError(f"La variable objetivo {target} no existe en el dataset.")
+
+		q1_t = df[target].quantile(0.25)
+		q3_t = df[target].quantile(0.75)
+		iqr_target = q3_t - q1_t
+		skew_target = df[target].skew()
+		kurt_target = df[target].kurtosis()
+
+		print(f"\nIndicadores para {etiqueta_target(target)} ({target}):")
+		print(f"IQR: {iqr_target:.4f}")
+		print(f"Asimetria (skewness): {skew_target:.4f}")
+		print(f"Curtosis: {kurt_target:.4f}")
 
 
-def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], out_dir: Path,):
+def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], out_dir: Path, targets: list[str]):
 	"""Genera histogramas, boxplots y detección de outliers con Z-score.
 
 	Parámetros:
@@ -149,8 +172,9 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 		num_cols (list[str]): Lista de columnas numéricas para dibujar los
 			histogramas y aplicar la detección de outliers.
 		cat_cols (list[str]): Lista de columnas categóricas usadas para crear
-			boxplots de la variable objetivo.
+			boxplots de las variables objetivo.
 		out_dir (Path): Directorio donde se guardan las imágenes generadas.
+		targets (list[str]): Lista de variables objetivo para generar boxplots.
 
 	Valor de retorno:
 		None: La función genera gráficos e imprime el resumen de outliers.
@@ -176,28 +200,33 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 	print(f"\nHistogramas guardados en: {out_dir / REQUIRED_OUTPUTS['histogramas_png']}")
 	plt.close(fig)
 
-	# Boxplots del target por cada categórica
+	# Boxplots de cada target por variable categórica.
 	if not cat_cols:
 		print("\nNo hay variables categóricas detectadas para boxplots.")
 	else:
-		cols_plot = 2
-		rows_plot = int(np.ceil(len(cat_cols) / cols_plot))
-		fig, axes = plt.subplots(rows_plot, cols_plot, figsize=(cols_plot * 7, rows_plot * 4))
-		axes = np.array(axes).reshape(-1)
+		for target in targets:
+			if target not in df.columns:
+				raise ValueError(f"La variable objetivo {target} no existe en el dataset.")
 
-		for i, col in enumerate(cat_cols):
-			sns.boxplot(data=df, x=col, y=TARGET, ax=axes[i], color="#e9c46a")
-			axes[i].set_title(f"{TARGET} por {col}", fontsize=10)
-			axes[i].tick_params(axis="x", rotation=25)
+			cols_plot = 2
+			rows_plot = int(np.ceil(len(cat_cols) / cols_plot))
+			fig, axes = plt.subplots(rows_plot, cols_plot, figsize=(cols_plot * 7, rows_plot * 4))
+			axes = np.array(axes).reshape(-1)
 
-		for j in range(i + 1, len(axes)):
-			axes[j].axis("off")
+			for i, col in enumerate(cat_cols):
+				sns.boxplot(data=df, x=col, y=target, ax=axes[i], color="#e9c46a")
+				axes[i].set_title(f"{etiqueta_target(target)} por {col}", fontsize=10)
+				axes[i].tick_params(axis="x", rotation=25)
 
-		fig.suptitle("Boxplots de la variable objetivo por variables categóricas", fontsize=14)
-		fig.tight_layout()
-		fig.savefig(out_dir / REQUIRED_OUTPUTS["boxplots_png"], dpi=180)
-		print(f"\nBoxplots guardados en: {out_dir / REQUIRED_OUTPUTS['boxplots_png']}")
-		plt.close(fig)
+			for j in range(i + 1, len(axes)):
+				axes[j].axis("off")
+
+			fig.suptitle(f"Boxplots de {etiqueta_target(target)} por variables categóricas", fontsize=14)
+			fig.tight_layout()
+			ruta_boxplot = out_dir / REQUIRED_OUTPUTS["boxplots_png"].format(target=sufijo_archivo(target))
+			fig.savefig(ruta_boxplot, dpi=180)
+			print(f"\nBoxplots guardados en: {ruta_boxplot}")
+			plt.close(fig)
 
 	# Detección de outliers.
 	outlier_resumen = []
@@ -276,7 +305,7 @@ def categoricas(df: pd.DataFrame, cat_cols: list[str], out_dir: Path):
 	plt.close(fig)
 
 
-def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path):
+def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path, targets: list[str]):
 	"""Calcula correlaciones, genera un heatmap y resume relaciones clave.
 
 	Parámetros:
@@ -285,10 +314,12 @@ def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path):
 		num_cols (list[str]): Lista de columnas numéricas usadas para construir
 			la matriz de correlación de Pearson.
 		out_dir (Path): Directorio donde se guarda la imagen del heatmap.
+		targets (list[str]): Variables objetivo para las que se resumen las
+			correlaciones más altas.
 
 	Valor de retorno:
 		None: La función no retorna valores; imprime por pantalla el top de
-			correlaciones con TARGET y los pares con posible multicolinealidad,
+			correlaciones con cada target y los pares con posible multicolinealidad,
 			y además guarda el heatmap en el directorio especificado.
 	"""
 	# Calcula matriz de correlación de Pearson y genera un heatmap.
@@ -317,12 +348,17 @@ def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path):
 	print(f"\nHeatmap de correlaciones guardado en: {out_dir / REQUIRED_OUTPUTS['heatmap_png']}\n")
 	plt.close()
 
-	# Analiza correlaciones con la variable objetivo y posibles multicolinealidades
-	if TARGET not in corr.columns:
-		raise ValueError(f"{TARGET} no aparece en columnas numéricas para correlación.")
+	# Analiza correlaciones con cada variable objetivo.
+	for target in targets:
+		if target not in corr.columns:
+			raise ValueError(f"{target} no aparece en columnas numéricas para correlación.")
 
-	corr_target = corr[TARGET].drop(TARGET).abs().sort_values(ascending=False)
-	top3 = corr_target.head(3)
+		corr_target = corr[target].drop(target).abs().sort_values(ascending=False)
+		top3 = corr_target.head(3)
+
+		print(f"Top 3 correlaciones absolutas con {etiqueta_target(target)} ({target}):")
+		for var, r in top3.items():
+			print(f"  - {var}: {r:.4f}")
 
 	pares_multicol = []
 	cols_num = corr.columns.tolist()
@@ -331,10 +367,6 @@ def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path):
 			r = corr.iloc[i, j]
 			if abs(r) > 0.9:
 				pares_multicol.append((cols_num[i], cols_num[j], r))
-
-	print("Top 3 correlaciones absolutas con la variable objetivo:")
-	for var, r in top3.items():
-		print(f"  - {var}: {r:.4f}")
 
 	if not pares_multicol:
 		print("\nNo se detectaron pares con multicolinealidad fuerte (|r| > 0.9).")
@@ -358,6 +390,10 @@ if __name__ == "__main__":
 		raise FileNotFoundError(f"No se encuentra el dataset en: {data_path}")
 	df = pd.read_csv(data_path)
 
+	# Crear variable derivada de calorías quemadas por hora y guardar dataset enriquecido.
+	df["Calories_Burned_Per_Hour"] = df["Calories_Burned"] / df["Session_Duration (hours)"]
+	df.to_csv(base_dir / "data" / REQUIRED_OUTPUTS["dataset_enriquecido_csv"], index=False)
+
 	print("\n" + "=" * 70)
 	print("A) RESUMEN ESTRUCTURAL")
 	print("=" * 70)
@@ -369,12 +405,12 @@ if __name__ == "__main__":
 	print("B) ESTADISTICOS DESCRIPTIVOS DE VARIABLES NUMERICAS")
 	print("=" * 70)
 	num_cols, cat_cols = detectar_columnas(df)
-	estadisticos(df, num_cols)
+	estadisticos(df, num_cols, TARGETS)
 
 	print("\n" + "=" * 70)
 	print("C) DISTRIBUCIONES")
 	print("=" * 70)
-	distribuciones(df, num_cols, cat_cols, out_dir)
+	distribuciones(df, num_cols, cat_cols, out_dir, TARGETS)
 
 	print("\n" + "=" * 70)
 	print("D) VARIABLES CATEGÓRICAS")
@@ -384,4 +420,4 @@ if __name__ == "__main__":
 	print("\n" + "=" * 70)
 	print("E) CORRELACIONES")
 	print("=" * 70)
-	correlaciones(df, num_cols, out_dir)
+	correlaciones(df, num_cols, out_dir, TARGETS)

@@ -6,27 +6,10 @@
 
 ## Ejercicio 1 — Análisis Estadístico Descriptivo
 ---
-En este ejercicio se realiza un análisis descriptivo en tres niveles: primero, la caracterización estructural del dataset; segundo, el estudio univariante de las variables numéricas mediante medidas de tendencia central, dispersión y forma; y tercero, el análisis bivariante de la variable objetivo frente a variables categóricas y numéricas relevantes.
 
-La evaluación de distribuciones se apoya en histogramas con curva KDE y en boxplots, mientras que la interpretación cuantitativa se sustenta en media, mediana, desviación típica, varianza, cuartiles e IQR. Además, se incluyen asimetría y curtosis para describir la forma de la distribución de la variable objetivo. Este enfoque permite justificar de forma estadística y transparente las decisiones posteriores de modelado.
+En este ejercicio se realiza un análisis descriptivo multinivel que incluye: caracterización estructural del dataset y composición de variables; evaluación del desbalance en categorías para identificar sesgos previos; estudio univariante de variables numéricas mediante tendencia central, dispersión y forma; análisis bivariante con visualización de distribuciones condicionales; detección de outliers; matriz de correlaciones de Pearson para identificar relaciones relevantes.
 
-**Subapartado: análisis de variables categóricas (frecuencias, gráficos y desbalance)**
-![ej1_categoricas](output/ej1_categoricas.png)
-Como complemento al análisis numérico, se evaluaron las cuatro variables categóricas detectadas mediante frecuencias absolutas/relativas y gráficos de barras, con el objetivo de comprobar si existe desbalance que pudiera condicionar la interpretación o el modelado posterior.
-
-Resultados principales:
-- **Gender:** Male 52.52% (511) y Female 47.48% (462). Distribución prácticamente equilibrada, sin categoría dominante.
-- **Workout_Type:** Strength 26.52% (258), Cardio 26.21% (255), Yoga 24.56% (239), HIIT 22.71% (221). Reparto homogéneo entre tipos de entrenamiento.
-- **Workout_Frequency (days/week):** 3 días 37.82% (368), 4 días 31.45% (306), 2 días 20.25% (197), 5 días 10.48% (102). Se observa mayor concentración en 3-4 días/semana, aunque sin dominancia extrema.
-- **Experience_Level:** nivel 2 = 41.73% (406), nivel 1 = 38.64% (376), nivel 3 = 19.63% (191). Existe menor representación del nivel avanzado, pero dentro de un rango todavía analíticamente usable.
-
-Interpretación de los gráficos de frecuencia:
-- Los gráficos de barras confirman visualmente la ausencia de picos desproporcionados.
-- No aparece ninguna categoría por encima del umbral de desbalance severo (60%), por lo que no hay evidencia de sesgo estructural fuerte.
-- La ligera infrarepresentación de Experience_Level = 3 y de Workout_Frequency = 5 sugiere prudencia interpretativa en esos subgrupos, pero no justifica técnicas de corrección en esta fase descriptiva.
-
-Conclusión del subapartado:
-En conjunto, las variables categóricas presentan un comportamiento razonablemente balanceado. Por tanto, el análisis descriptivo es estable y no requiere, por ahora, estrategias de remuestreo o ponderación específicas por frecuencia de categoría.
+La evaluación de distribuciones se apoya en histogramas con curva KDE, boxplots y medidas de forma (asimetría, curtosis). La interpretación cuantitativa utiliza media, mediana, desviación típica, varianza, cuartiles e IQR. Este enfoque permite tomar decisiones posteriores de modelado sustentadas en evidencia estadística y conceptual.
 
 ---
 
@@ -43,16 +26,16 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > - **Tamaño del archivo CSV:** 0.062 MB (requisito: <15 MB)
 > - **Número de filas:** 973 observaciones
 > - **Variables categóricas:** 4 (Gender, Workout_Type, Experience_Level, Workout_Frequency)
-> - **Varibales continuas:** 7 (Weight(kg), Height(m), Session_Duration(h), Calories_Burned, Fat_Percentage, Water_Intake(l), BMI)
+> - **Variables numéricas:** 11 (Age, Weight, Height, Max_BPM, Avg_BPM, Resting_BPM, Session_Duration, Calories_Burned, Fat_Percentage, Water_Intake, BMI)
 > - **Variable objetivo:** 1 (Calories_Burned)
 > 
 > **Composición de las variables:**
 > 
-> El dataset incluye 11 variables numéricas (de precisión continua o discreta): Age, Weight, Height, Max_BPM, Avg_BPM, Resting_BPM, Session_Duration, Fat_Percentage, Water_Intake, BMI y la variable objetivo Calories_Burned. Adicionalmente hay 4 variables categóricas:
-> - **Gender (str):** Género del miembro (2 categorías)
-> - **Workout_Type (str):** Tipo de entrenamiento realizado (cardio, fuerza, etc.)
+> El dataset incluye 11 variables numéricas (de precisión continua o discreta): Age, Weight, Height, Max_BPM, Avg_BPM, Resting_BPM, Session_Duration, Fat_Percentage, Water_Intake, BMI y la variable objetivo **Calories_Burned**. Adicionalmente hay 4 variables categóricas:
+> - **Gender (str):** Género del miembro (2 categorías: Male, Female)
+> - **Workout_Type (str):** Tipo de entrenamiento realizado (4 categorías: Cardio, Strength, Yoga, HIIT)
 > - **Experience_Level (int discreto, 1-3 niveles):** Tratada como categórica ordinal (principiante, intermedio, avanzado)
-> - **Workout_Frequency (int discreto, 3-7 días/semana):** Días de entrenamiento por semana, tratada como categórica debido a su bajo número de valores únicos
+> - **Workout_Frequency (int discreto, días/semana):** Días de entrenamiento por semana, tratada como categórica debido a su bajo número de valores únicos
 > 
 > **Variable objetivo (Target): Calories_Burned**
 > 
@@ -63,6 +46,30 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > 3. **Variabilidad capturada:** Los regresores disponibles explican una parte significativa de su varianza (especialmente Session_Duration, Weight y tipo de ejercicio).
 > 4. **Aplicación práctica:** Predecir calorías quemadas es útil para el diseño de planes de entrenamiento personalizados y seguimiento de objetivos fitness.
 
+---
+
+**Subapartado: Análisis de variables categóricas (frecuencias, gráficos y desbalance)**
+
+![ej1_categoricas](output/ej1_categoricas.png)
+
+Como complemento al análisis numérico, se evaluaron las cuatro variables categóricas detectadas mediante frecuencias absolutas/relativas y gráficos de barras, con el objetivo de comprobar si existe desbalance que pudiera condicionar la interpretación o el modelado posterior.
+
+**Resultados principales:**
+- **Gender:** Male 52.52% (511) y Female 47.48% (462). Distribución prácticamente equilibrada, sin categoría dominante.
+- **Workout_Type:** Strength 26.52% (258), Cardio 26.21% (255), Yoga 24.56% (239), HIIT 22.71% (221). Reparto homogéneo entre tipos de entrenamiento.
+- **Workout_Frequency (days/week):** 3 días 37.82% (368), 4 días 31.45% (306), 2 días 20.25% (197), 5 días 10.48% (102). Se observa mayor concentración en 3-4 días/semana, aunque sin dominancia extrema.
+- **Experience_Level:** nivel 2 = 41.73% (406), nivel 1 = 38.64% (376), nivel 3 = 19.63% (191). Existe menor representación del nivel avanzado, pero dentro de un rango todavía analíticamente usable.
+
+**Interpretación de los gráficos de frecuencia:**
+- Los gráficos de barras confirman visualmente la ausencia de picos desproporcionados.
+- No aparece ninguna categoría por encima del umbral de desbalance severo (60%), por lo que no hay evidencia de sesgo estructural fuerte.
+- La ligera infrarepresentación de Experience_Level = 3 y de Workout_Frequency = 5 sugiere prudencia interpretativa en esos subgrupos, pero no justifica técnicas de corrección en esta fase descriptiva.
+
+**Conclusión del subapartado:**
+En conjunto, las variables categóricas presentan un comportamiento razonablemente balanceado. Por tanto, el análisis descriptivo es estable y no requiere, por ahora, estrategias de remuestreo o ponderación específicas por frecuencia de categoría.
+
+---
+
 **Pregunta 1.2** — ¿Qué distribución tienen las principales variables numéricas y has encontrado outliers? Indica en qué variables y qué has decidido hacer con ellos.
 
 > El análisis descriptivo de las variables numéricas muestra, en términos generales, distribuciones razonablemente estables, con distinta dispersión según la naturaleza de cada variable y sin evidencia de valores extremos problemáticos en la mayoría de los casos.
@@ -70,25 +77,25 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > **1) Estadísticos descriptivos e interpretación por grupos de variables**
 >
 > **Edad y variables fisiológicas de BPM**
-> - **Age:** media 38, mediana 40, desviación típica 12.1809, IQR = 21. Se observa una dispersión moderada, con centro claro en torno a 40 años.
-> - **Max_BPM:** media 179.8839, mediana 180, desviación típica 11.5257, IQR = 20.
-> - **Avg_BPM:** media 143.7667, mediana 143, desviación típica 14.3451, IQR = 25.
-> - **Resting_BPM:** media 62.2230, mediana 62, desviación típica 7.3271, IQR = 12.
+> - **Age:** media 39, mediana 40, desviación típica 12.18, IQR = 21. Se observa una dispersión moderada, con centro claro en torno a 40 años.
+> - **Max_BPM:** media 179.88, mediana 180, desviación típica 11.53, IQR = 20.
+> - **Avg_BPM:** media 143.77, mediana 143, desviación típica 14.35, IQR = 25.
+> - **Resting_BPM:** media 62.22, mediana 62, desviación típica 7.33, IQR = 12.
 > 
 > En las cuatro variables, media y mediana son muy próximas, lo que sugiere distribuciones cercanas a simétricas y sin sesgos severos. Además, los rangos observados son coherentes con contextos de entrenamiento físico, por lo que no aparecen señales de valores anómalos estructurales.
 >
 > **Antropometría y composición corporal**
-> - **Weight (kg):** media 73.8547, mediana 70, desviación típica 21.2075, IQR = 27.9.
-> - **Height (m):** media 1.7226, mediana 1.71, desviación típica 0.1277, IQR = 0.18.
-> - **BMI:** media 24.9121, mediana 24.16, desviación típica 6.6609, IQR = 8.45.
-> - **Fat_Percentage:** media 24.9768, mediana 26.20, desviación típica 6.2594, IQR = 8.0.
+> - **Weight (kg):** media 73.85, mediana 70, desviación típica 21.21, IQR = 27.9.
+> - **Height (m):** media 1.72, mediana 1.71, desviación típica 0.13, IQR = 0.18.
+> - **BMI:** media 24.91, mediana 24.16, desviación típica 6.66, IQR = 8.45.
+> - **Fat_Percentage:** media 24.98, mediana 26.20, desviación típica 6.26, IQR = 8.0.
 > 
 > En peso e IMC se aprecia mayor heterogeneidad entre individuos (desviaciones más altas), algo esperable en una muestra amplia de usuarios de gimnasio con perfiles distintos. Altura presenta menor variabilidad relativa, como era esperable. En grasa corporal, la mediana supera a la media, lo que sugiere un leve sesgo hacia valores bajos en parte de la muestra.
 >
 > **Carga de entrenamiento y resultado energético**
-> - **Session_Duration (hours):** media 1.2564, mediana 1.26, desviación típica 0.3430, IQR = 0.42.
-> - **Water_Intake (liters):** media 2.6266, mediana 2.60, desviación típica 0.6002, IQR = 0.90.
-> - **Calories_Burned (target):** media 905.4224, mediana 893, desviación típica 272.6415, IQR = 356.
+> - **Session_Duration (hours):** media 1.26, mediana 1.26, desviación típica 0.34, IQR = 0.42.
+> - **Water_Intake (liters):** media 2.63, mediana 2.60, desviación típica 0.60, IQR = 0.90.
+> - **Calories_Burned (target):** media 905.42, mediana 893, desviación típica 272.64, IQR = 356.
 > 
 > La duración de sesión y la ingesta de agua muestran variabilidad moderada. La variable objetivo presenta mayor dispersión absoluta (std alta e IQR amplio), lo cual es consistente con la combinación de perfiles físicos y rutinas diferentes.
 >
@@ -105,7 +112,9 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > - En conjunto, la variable objetivo no presenta una deformación severa y mantiene buena calidad para modelado de regresión.
 >
 > **3) Lectura de histogramas con KDE**
+>
 >![ej1_histogramas](output/ej1_histogramas.png)
+> 
 > Los histogramas con KDE confirman lo observado en los estadísticos:
 > - **Age, BPM y Height** muestran perfiles bastante equilibrados, sin picos extremos aislados.
 > - **Weight y BMI** presentan mayor extensión de la cola derecha, coherente con algunos individuos de mayor masa corporal.
@@ -113,7 +122,9 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > - **Calories_Burned** tiene forma aproximadamente unimodal, centro alrededor de 850-950 y ligera cola a la derecha.
 >
 > **4) Boxplots de Calories_Burned por variables categóricas**
->![ej1_boxplots](output/ej1_boxplots.png)
+>
+>![ej1_boxplots_calories_burned](output/ej1_boxplots_calories_burned.png)
+> 
 > Hallazgos más relevantes:
 > - **Gender:** distribución relativamente similar entre grupos, con medianas cercanas y ligera diferencia a favor de hombres.
 > - **Workout_Type:** las medianas son próximas entre tipos, con cierta ventaja de HIIT/Strength y dispersión comparable.
@@ -126,7 +137,7 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 >
 > A partir de la forma de las distribuciones (en general cercanas a simétricas y sin colas extremas severas), se optó por **Z-score** para la detección de outliers, ya que resulta coherente cuando la dispersión está bien representada por media y desviación típica.
 >
-> Resumen de outliers detectados:
+> **Resumen de outliers detectados:**
 > - **BMI:** 10 casos (1.03%), límites [4.9295, 44.8948]
 > - **Calories_Burned:** 3 casos (0.31%), límites [87.4979, 1723.3470]
 > - **Resto de variables:** 0 casos
@@ -139,12 +150,16 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > - Eliminar esos casos podría reducir variabilidad real y sesgar el modelo hacia perfiles medios, perdiendo capacidad de generalización en usuarios extremos pero reales.
 > - Dado que no hay evidencia de error de medición ni ruptura estructural de la distribución, conservarlos aporta más valor analítico que descartarlos.
 
+---
+
 **Pregunta 1.3** — ¿Qué tres variables numéricas tienen mayor correlación (en valor absoluto) con la variable objetivo? Indica los coeficientes.
+
 >![ej1_heatmap_correlacion](output/ej1_heatmap_correlacion.png)
+> 
 > Las tres variables numéricas con mayor correlación absoluta respecto a **Calories_Burned** son:
 >
 > 1. **Session_Duration (hours):** $r = 0.9081$
-> 2. **Fat_Percentage:** $r = -0.5976$ (en valor absoluto, $|r| = 0.5976$)
+> 2. **Fat_Percentage:** $r = -0.5976$ (valor absoluto $|r| = 0.5976$)
 > 3. **Water_Intake (liters):** $r = 0.3569$
 >
 > **Interpretación:**
@@ -157,7 +172,7 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 > **Multicolinealidad (umbral $|r| > 0.9$):**
 > - Se detecta el par **Session_Duration (hours) vs Calories_Burned** con $r = 0.9081$.
 >
-> Este resultado confirma una relación muy fuerte entre una variable predictora y el target (lo cual es deseable para predicción). En cambio, no se observan pares de predictores con $|r| > 0.9$, por lo que no hay evidencia de multicolinealidad severa entre variables explicativas en este criterio.
+> Este resultado confirma una relación muy fuerte entre una variable predictora y el target(lo cual es deseable para predicción). Sin embargo, esta correlación muy alta ha motivado la creación de una nueva variable derivada (ver próximo apartado) para enriquecer el análisis, ya que proporciona un nuevo ángulo de interpretación eliminando el componente "obvio" de la duración de sesión, cuanto más dure una sesión mayor será su gasto calórico.
 
 **Pregunta 1.4** — ¿Hay valores nulos en el dataset? ¿Qué porcentaje representan y cómo los has tratado?
 
@@ -167,24 +182,87 @@ En conjunto, las variables categóricas presentan un comportamiento razonablemen
 
 ---
 
-## Ejercicio 2 — Inferencia con Scikit-Learn
+## Apartado de Enriquecimiento: Variable Derivada Calories_Burned_Por_Hora
 
 ---
-En este ejercicio se construye un modelo de regresión lineal para predecir **Calories_Burned** y se evalúa su capacidad de generalización sobre datos no vistos. El objetivo no es solo reportar métricas, sino validar que el pipeline de preprocesamiento sea coherente con la naturaleza de las variables y con los hallazgos del Ejercicio 1.
+
+Tras completar el análisis descriptivo con la variable objetivo original (**Calories_Burned**), se identificó que su correlación muy alta con **Session_Duration (hours)** ($r = 0.9081$) hacía que los resultados de regresión estuvieran dominados por un efecto "obvio": sesiones más largas queman más calorías. 
+
+Para obtener insights más profundos y desacoplar los efectos de la duración de la sesión, se creó una **variable derivada normalizada por duración**: 
+
+$$\text{Calories\_Burned\_Por\_Hora} = \frac{\text{Calories\_Burned}}{\text{Session\_Duration (hours)}}$$
+
+Esta nueva variable representa la **eficiencia metabólica** o **intensidad energética** de cada sesión, independientemente de cuánto tiempo haya durado. Con ella se puede responder preguntas como: "¿Qué factores relacionados con la persona, el tipo de entrenamiento o la experiencia determinan el gasto de calorías *por hora* de ejercicio?" De esta forma se eliminan las conclusiones obvias y se enfatizan factores más interesantes para la prescripción de entrenamiento personalizado.
+
+---
+
+**Análisis descriptivo de la variable Calories_Burned_Por_Hora**
+
+**1) Indicadores de forma y dispersión:**
+- **Media:** 720.42 cal/h
+- **Mediana:** 715.27 cal/h
+- **Desviación típica:** 86.94 cal/h
+- **IQR:** 126.3889 cal/h
+- **Asimetría (skewness):** 0.2460
+- **Curtosis:** -0.5596
+
+**Interpretación:**
+- La media y mediana están muy cercanas (720 vs 715), lo que indica una distribución bastante simétrica, incluso con una asimetría ligeramente positiva pero muy leve (0.2460).
+- La curtosis negativa (-0.5596) indica que la distribución es **platicúrtica** (colas más ligeras y perfil más plano que la normal), lo que sugiere ausencia de valores muy extremos y una dispersión más uniforme alrededor de la media.
+- El IQR de 126.39 es proporcionalemente menor que el de Calories_Burned (356), lo que evidencia que normalizar por duración reduce variabilidad absoluta e introduce una estructura más homogénea.
+
+**2) Histograma con KDE y comportamiento:**
+
+Al observar el histograma de **Calories_Burned_Por_Hora** en la figura general de distribuciones numéricas, se aprecia:
+- Forma aproximadamente **unimodal y simétrica**, sin colas extremas pronunciadas.
+- Concentración principal entre 650-780 cal/h.
+- Ausencia de multimodalidad, lo que sugiere que los datos forman una población relativamente homogénea en términos de intensidad metabólica por hora.
+- Comparada con **Calories_Burned**, esta nueva variable tiene un perfil más "limpio" (menos influencia de la duración introducida artificialmente).
+
+**3) Correlaciones con variables categóricas (Boxplots):**
+
+![ej1_boxplots_calories_burned_per_hour](output/ej1_boxplots_calories_burned_per_hour.png)
+
+**Hallazgos clave:**
+- **Gender:** Hombres (Male) muestran mediana ligeramente superior (~750) vs mujeres (~680), indicando mayor gasto energético relativo por hora. Con respecto a Calories_Burned, la diferencia es más pronunciada. Esto sugiere que, aunque los hombres queman más calorías en total, también lo hacen de forma más eficiente por hora.
+- **Workout_Type:** Los tipos siguen un un patron similar al observado en Calories_Burned, lo que quiere decir que la duración de la sesión esta equilibrada entre tipos de entrenamiento. LLama la atención que HIIT y Cardio tipos de entrenamiento enfocados en intensidad y gasto calorico no destacan sobre Strength y Yoga, lo que envidiencia el poder de estos últimos para generar gasto calórico.
+- **Workout_Frequency:** Contraintuitivamente, la frecuencia parece tener poco efecto en la intensidad por hora (las cajas están muy superpuestas), lo que sugiere que entrenar más días no necesariamente implica mayor gasto energético *por sesión*. A diferencia de Calories_Burned, donde la frecuencia mostraba un patrón claro, aquí se diluye, lo que indica que el efecto de la frecuencia se manifiesta principalmente a través de la duración total de las sesiones.
+- **Experience_Level:** La intensidad por hora no muestra diferencias tan claras entre niveles como en Calories_Burned, lo que sugiere que la experiencia influye más en la capacidad de mantener sesiones largas que en la eficiencia energética por hora.
+
+**4) Correlaciones de Pearson revisadas:**
+
+En la matriz de correlación expandida (incluida la nueva variable), se observa:
+- **Correlación con Avg_BPM:** $r = 0.8105$ (muy fuerte)
+- **Correlación con Calories_Burned:** $r = 0.4113$ (moderada, esperada por construcción)
+- **Correlación con Age:** $r = -0.3343$ (valor absoluto $|r| = 0.3343$)
+
+**Interpretación:** La nueva variable tiene una **correlación MUY fuerte con Avg_BPM** (frecuencia cardíaca promedio), lo cual es lógico: si el corazón late más rápido durante una sesión, es porque el ejercicio es más intenso, y por tanto se queman más calorías por hora. Tambien aparece una mayor correlación en Age, Weight y Height. Esto proporciona información biológicamente interpretable que antes estaba enmascarada por el efecto de la duración. A diferencia de Calories_Burned, donde el fat_percentage era el segundo predictor más relevante, aquí su correlación cae a 0.17, lo que sugiere que tenia mas que ver con la capacidad de mantener sesiones largas. Finalmente la correlación con Session_Duration cae a 0.01, lo que confirma que la normalización por duración ha reducido significativamente la dependencia entre ambas variables, permitiendo que el modelo de regresión capture otros factores relevantes.
+
+---
+
+## Ejercicio 2 — Inferencia con Scikit-Learn
+---
+
+En este ejercicio se construyen dos modelos de regresión lineal: uno para **Calories_Burned** y otro para la nueva variable **Calories_Burned_Por_Hora**. El objetivo es validar que ambos pipelines de preprocesamiento sean coherentes con la naturaleza de las variables y con los hallazgos del Ejercicio 1, permitiendo así comparar cómo la normalización por duración cambia la interpretabilidad de los predictores.
+
+---
 
 **Estrategia de preprocesamiento y justificación**
 
 1. **Separación de tipos de variables**
+
 Se detectaron variables numéricas y categóricas siguiendo el mismo criterio del Ejercicio 1. Por lo tanto, se trataron como categóricas las variables numéricas discretas de pocos niveles (**Experience_Level** y **Workout_Frequency (days/week)**), ya que representan niveles/estados más que magnitudes continuas.
 
 2. **Codificación de variables categóricas**
-Se aplicó **OneHotEncoder** para convertir las categorías en variables binarias sin imponer un orden artificial. Esta decisión es especialmente adecuada para un modelo lineal, ya que permite estimar efectos diferenciados por categoría. No se opto por **LabelEncoder** debido a que asigna enteros (0, 1, 2, ...) y puede introducir una relación ordinal ficticia entre categorías nominales (por ejemplo, HIIT > Yoga), algo que distorsiona la interpretación en regresión lineal. Ni tampoco se uso **get_dummies** de pandas, ya que aunque también genera dummies, OneHotEncoder se integra mejor dentro de pipelines con ColumnTransformer y evita fugas de información entre train/test.
+
+Se aplicó **OneHotEncoder** para convertir las categorías en variables binarias sin imponer un orden artificial. Esta decisión es especialmente adecuada para un modelo lineal, ya que permite estimar efectos diferenciados por categoría. No se optó por **LabelEncoder** debido a que asigna enteros (0, 1, 2, ...) y puede introducir una relación ordinal ficticia entre categorías nominales (por ejemplo, HIIT > Yoga), algo que distorsiona la interpretación en regresión lineal. Ni tampoco se usó **get_dummies** de pandas, ya que aunque también genera dummies, OneHotEncoder se integra mejor dentro de pipelines con ColumnTransformer y evita fugas de información entre train/test.
 
 3. **Escalado de variables numéricas**
+
 Se utilizó **StandardScaler** sobre las variables numéricas. En regresión lineal no cambia la calidad predictiva de forma drástica, pero sí estabiliza la escala entre predictores y hace comparables los coeficientes estandarizados dentro del pipeline. **StandardScaler** centra y escala con media/desviación típica, lo que suele funcionar mejor cuando las variables tienen distribución aproximadamente continua y sin límites naturales estrictos. En cambio, **MinMaxScaler** normaliza a un rango [0, 1], lo que puede ser útil para algoritmos basados en distancias o con sensibilidad a la escala, pero en este caso no aporta ventajas claras y puede ser más sensible a valores extremos. Dado que en este dataset existen algunos outliers plausibles (pocos, pero presentes), StandardScaler ofrece una transformación más estable para este caso.
 
 4. **Columnas incluidas/excluidas**
-No se eliminaron columnas por falta de información, ya que todas las variables disponibles tienen interpretación sustantiva en el contexto de gasto calórico (demografía, condición física, intensidad y hábitos de entrenamiento). Se mantuvo **remainder="drop"** para evitar columnas no definidas en el transformador.
+No se eliminaron columnas por falta de información, ya que todas las variables disponibles tienen interpretación sustantiva en el contexto de gasto calórico (demografía, condición física, intensidad y hábitos de entrenamiento). Se mantuvo **remainder="drop"** para evitar columnas no definidas en el transformador. Sin embargo, para el modelo con **Calories_Burned_Por_Hora**, se excluyeron de los predictores tanto **Calories_Burned** como **Session_Duration (hours)** para evitar fuga de información y obtener un modelo que capture factores intrínsecos de eficiencia (composición corporal, edad, género, experiencia) sin depender del cálculo directo de la variable derivada.
 
 5. **Partición Train/Test**
 Se aplicó **train_test_split(..., test_size=0.2, random_state=42)**:
@@ -194,72 +272,114 @@ Se aplicó **train_test_split(..., test_size=0.2, random_state=42)**:
 
 Esta partición permite entrenar con suficiente información y reservar un bloque robusto para evaluar el modelo.
 
-6. **Estructura final del preprocesador**
-Se implementó un **ColumnTransformer** con:
-- Rama numérica: StandardScaler sobre 10 variables numéricas
-- Rama categórica: OneHotEncoder sobre 4 variables categóricas
-
-Con esta configuración, el pipeline queda reproducible, trazable y alineado con buenas prácticas de inferencia supervisada.
-
 ---
 
 **Pregunta 2.1** — Indica los valores de MAE, RMSE y R² de la regresión lineal sobre el test set. ¿El modelo funciona bien? ¿Por qué?
 
-> **Métricas en test (n = 195):**
+> **Modelo 1: Calories_Burned**
+>
+> Métricas en test (n = 195):
 > - **MAE:** 30.3485
 > - **RMSE:** 40.6043
 > - **R²:** 0.9802
 >
-> **Métricas en train (n = 778):**
+> Métricas en train (n = 778):
 > - **MAE:** 29.5852
 > - **RMSE:** 38.9085
 > - **R²:** 0.9790
 >
-> **Evaluación del rendimiento del modelo**
+> **Modelo 2: Calories_Burned_Por_Hora**
 >
-> El modelo funciona **muy bien**. El valor de $R^2 = 0.9802$ en test indica que explica aproximadamente el 98% de la variabilidad de la variable objetivo en datos no vistos. Además, los errores absolutos y cuadráticos (MAE y RMSE) son bajos en relación con la escala de **Calories_Burned** observada en el Ejercicio 1.
+> Métricas en test (n = 195):
+> - **MAE:** 15.4899
+> - **RMSE:** 19.0610
+> - **R²:** 0.9564
+>
+> Métricas en train (n = 778):
+> - **MAE:** 16.4179
+> - **RMSE:** 20.0323
+> - **R²:** 0.9454
+>
+> ---
+>
+> **Evaluación del rendimiento de ambos modelos**
+>
+> **Ambos modelos funcionan muy bien.** Ambos superan un $R^2$ de 0.95 en test, lo que indica que explican más del 95% de la variabilidad en datos no vistos. Además, los errores absolutos y cuadráticos (MAE y RMSE) son bajos en relación con la escala de Calories_Burned y Calories_Burned_Por_Hora respectivamente, observada en el Ejercicio 1.
 >
 > La comparación train vs test no muestra señales de **overfitting** ni de **underfitting**:
-> - **No overfitting:** si existiera sobreajuste, esperaríamos métricas claramente mejores en train que en test. Aquí las diferencias son pequeñas y estables (MAE: 29.5852 vs 30.3485; RMSE: 38.9085 vs 40.6043; $R^2$: 0.9790 vs 0.9802), lo que indica buena generalización.
+> - **No overfitting:** si existiera sobreajuste, esperaríamos métricas claramente mejores en train que en test. Aquí las diferencias son pequeñas y estables (MAE: 29.5852 vs 30.3485; RMSE: 38.9085 vs 40.6043; $R^2$: 0.9790 vs 0.9802) para Calories_Burned y (MAE: 16.4179 vs 15.4899; RMSE: 20.0323 vs 19.0610; $R^2$: 0.9454 vs 0.9564) para Calories_Burned_Por_Hora, lo que indica buena generalización.
 > - **No underfitting:** si existiera infraajuste, tanto train como test tendrían desempeño pobre (errores altos y $R^2$ bajo). En este caso, ambos conjuntos muestran ajuste alto y consistente.
 >
-> **Análisis del gráfico de residuos**
->![ej2_residuos](output/ej2_residuos.png)
-> El gráfico de residuos muestra una nube centrada en torno a 0 (línea horizontal), sin patrón curvilíneo dominante. Esto respalda que la estructura lineal captura adecuadamente la relación principal entre predictores y target. Se aprecia una dispersión algo mayor en valores predichos altos; este comportamiento es coherente con lo observado en el Ejercicio 1, donde **Calories_Burned** presentaba ligera cola a la derecha (asimetría positiva) y 3 outliers plausibles (0.31%, límites [87.4979, 1723.3470]). Por tanto, esa mayor dispersión en la zona alta parece asociada a la propia estructura del target más que a un fallo grave del modelo.
+> **Diferencias clave entre modelos:**
 >
-> **Variables más influyentes (magnitud de coeficientes)**
+> 1. **Escala de predicción:** 
+>    - Calories_Burned predice valores en rango ~300-1800 calorías, con errores absolutos (MAE) de ~30 unidades.
+>    - Calories_Burned_Por_Hora predice valores en rango ~540-930 cal/h, con errores MAE de ~15 unidades.
+>    - En términos relativos (MAE / Media), ambos tienen errores similares (~3-3.5% del valor medio).
 >
-> Entre los coeficientes de mayor impacto aparecen:
-> - **Session_Duration (hours):** +240.4092
-> - **Avg_BPM:** +88.6157
-> - **Age:** -40.3406
-> - **Gender_Male / Gender_Female:** +/-39.7869
-> - **BMI:** +22.4929
-> - **Weight (kg):** -21.7642
+> 2. **Interpretabilidad:**
+>    - El modelo de Calories_Burned es más "obvio": mayor duración → más calorías.
+>    - El modelo de Calories_Burned_Por_Hora ofrece insights más profundos: qué factores inherentes a la persona y al tipo de entrenamiento generan mayor **eficiencia metabólica**.
 >
-> La variable más influyente es **Session_Duration (hours)**, lo cual es totalmente coherente con el Ejercicio 1, donde ya aparecía como la correlación más fuerte con el target ($r = 0.9081$). También encaja que variables relacionadas con intensidad/condición fisiológica (Avg_BPM, composición corporal) contribuyan de forma relevante.
+> 3. **Uso práctico:**
+>    - Calories_Burned es útil para estimar el gasto total esperado en una sesión.
+>    - Calories_Burned_Por_Hora es más útil para diseñar entrenamientos de mayor "calidad" o intensidad relativa, independientemente de la duración.
 >
-> **Análisis de sensibilidad sin Session_Duration (complementario)**
+> ---
+> **Análisis de gráficos de residuos**
 >
-> Para comprobar si el rendimiento dependía en exceso de una sola variable, se estimó una variante del modelo excluyendo **Session_Duration (hours)**. El desempeño cayó de forma importante: en test, el $R^2$ pasó de **0.9802** a **0.6716**, el MAE de **30.35** a **134.99** y el RMSE de **40.60** a **165.53**.
+>![ej2_residuos_calories_burned](output/ej2_residuos_calories_burned.png)
 >
-> Esta caída confirma que Session_Duration aporta una señal predictiva central, algo esperable por la propia lógica del problema (a mayor tiempo de entrenamiento, mayor gasto calórico). No obstante, el experimento también permite extraer información útil: al retirar esa variable, ganan peso relativo otros predictores como **Experience_Level**, **Avg_BPM** y **Age**, que ayudan a interpretar factores secundarios del gasto energético.
+> El gráfico de residuos del modelo original muestra una nube centrada en torno a 0 (línea horizontal), sin patrón curvilíneo dominante. Esto respalda que la estructura lineal captura adecuadamente la relación principal entre predictores y target. Se aprecia una dispersión algo mayor en valores predichos altos; este comportamiento es coherente con lo observado en el Ejercicio 1, donde **Calories_Burned** presentaba ligera cola a la derecha (asimetría positiva) y 3 outliers plausibles (0.31%, límites [87.4979, 1723.3470]). Por tanto, esa mayor dispersión en la zona alta parece asociada a la propia estructura del target más que a un fallo grave del modelo.
 >
-> **Conexión con el Ejercicio 1**
+>![ej2_residuos_calories_burned_por_hora](output/ej2_residuos_calories_burned_per_hour.png)
 >
-> Los hallazgos del análisis descriptivo fueron clave para interpretar el resultado del modelo:
-> - La fuerte relación entre duración de sesión y calorías (detectada en correlaciones y boxplots) anticipaba un modelo con alta capacidad explicativa.
-> - La ausencia de nulos y el bajo nivel de outliers facilitaron un entrenamiento estable sin necesidad de imputaciones ni depuraciones agresivas.
-> - El comportamiento razonablemente balanceado de las categóricas permitió codificación one-hot sin sesgos evidentes por clases dominantes.
+> El gráfico de residuos del modelo de la variable derivada muestra igualmente una nube centrada cercana a 0, con dispersión uniforme y equilibrada en ambas direcciones. La ausencia de patrones curvos o heteroscedasticidad sugiere que el modelo lineal es adecuado para esta variable también. La variabilidad de residuos es menor en magnitud absoluta (rango aprox. ±40) respecto al modelo anterior (rango aprox. ±100), coherente con la distribución más limpia (platicúrtica) de Calories_Burned_Por_Hora observada en el Ejercicio 1 y la ausencia de outliers.
 >
-> **Mejoras concretas propuestas**
+> ---
 >
-> Dado el rendimiento actual (muy alto y estable), no son imprescindibles cambios estructurales. Como mejoras opcionales y realistas para este dataset:
+> **Variables más influyentes por modelo**
 >
-> 1. Validar estabilidad con **K-Fold** para confirmar que el buen resultado no depende del split concreto.
-> 2. Contrastar una variante con **Ridge** para comprobar si se mantiene el rendimiento con coeficientes algo más estables.
-> 3. Reportar métricas por tramos de **Calories_Burned** (bajo/medio/alto) para verificar si la ligera mayor dispersión en valores altos afecta de forma práctica a un subgrupo concreto.
+> **Modelo 1: Calories_Burned**
+> - **Session_Duration (hours):** +240.41 (domina completamente)
+> - **Avg_BPM:** +88.62
+> - **Age:** -40.34
+> - **Gender_Male/Female:** +/-39.79
+> - **BMI:** +22.49
+> - **Weight:** -21.76
+>
+> **Modelo 2: Calories_Burned_Por_Hora**
+> - **Avg_BPM:** +71.22 (ahora es el más importante)
+> - **Gender_Male:** +34.46
+> - **Gender_Female:** -34.46
+> - **Age:** -32.10
+> - **Workout_Frequency (5 days/week):** +5.32
+> - **Experience_Level (3):** -4.44
+>
+> **Comparación interpretativa:**
+> - En el primer modelo, Session_Duration opaca todo lo demás: es el determinante casi único.
+> - En el segundo modelo, sin esa variable dominante, emergen factores como intensidad cardiovascular (Avg_BPM), género y edad. Esto es información más valiosa para prescripción personalizada.
 
+**Mejoras concretas propuestas**
+
+Aunque el rendimiento actual es alto y estable, sí hay tres mejoras concretas que aportarían más solidez analítica al estudio:
+
+1. **Validación cruzada K-Fold (por ejemplo, 5-fold):**
+	- Permite comprobar si el buen rendimiento depende del split concreto utilizado en train/test.
+	- Sería especialmente útil comparar la media y la desviación típica de MAE, RMSE y R² en ambos targets.
+	- Si la variabilidad entre folds fuese baja, reforzaría la conclusión de que el modelo generaliza bien; si fuese alta, indicaría sensibilidad al reparto de datos.
+
+2. **Comparación con Ridge Regression:**
+	- Es la extensión natural para evaluar si la ligera multicolinealidad entre variables numéricas afecta a la estabilidad de los coeficientes.
+	- En el modelo original interesa porque `Session_Duration` domina claramente la predicción; Ridge permitiría comprobar si ese peso se mantiene o se reparte mejor entre predictores correlacionados.
+	- En el modelo de `Calories_Burned_Por_Hora`, serviría para verificar si `Avg_BPM`, `Age` y las variables categóricas conservan su importancia al introducir regularización.
+
+3. **Análisis de error por tramos de la variable objetivo:**
+	- Dividir `Calories_Burned` y `Calories_Burned_Por_Hora` en tramos bajo/medio/alto mediante terciles o cuantiles.
+	- Calcular MAE y RMSE por tramo para comprobar si el modelo falla más en sesiones intensas o en sesiones muy largas.
+	- Esta mejora es importante porque en el modelo original ya se observó algo más de dispersión en los valores altos; segmentar el error permitiría cuantificar si ese patrón tiene impacto práctico.
+
+Como extensión adicional, también sería útil revisar residuos por subgrupos de `Gender`, `Workout_Type` y `Experience_Level`, para detectar si el modelo está sesgado en alguno de ellos y no solo en promedio global.
 
 ---
 
