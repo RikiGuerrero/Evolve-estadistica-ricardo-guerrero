@@ -7,7 +7,7 @@
 ## Ejercicio 1 — Análisis Estadístico Descriptivo
 ---
 
-En este ejercicio se realiza un análisis descriptivo multinivel que incluye: caracterización estructural del dataset y composición de variables; evaluación del desbalance en categorías para identificar sesgos previos; estudio univariante de variables numéricas mediante tendencia central, dispersión y forma; análisis bivariante con visualización de distribuciones condicionales; detección de outliers; matriz de correlaciones de Pearson para identificar relaciones relevantes.
+Para empezar se realiza un análisis descriptivo multinivel que incluye: caracterización estructural del dataset y composición de variables; evaluación del desbalance en categorías para identificar sesgos previos; estudio univariante de variables numéricas mediante tendencia central, dispersión y forma; análisis bivariante con visualización de distribuciones condicionales; detección de outliers; matriz de correlaciones de Pearson para identificar relaciones relevantes.
 
 La evaluación de distribuciones se apoya en histogramas con curva KDE, boxplots y medidas de forma (asimetría, curtosis). La interpretación cuantitativa utiliza media, mediana, desviación típica, varianza, cuartiles e IQR. Este enfoque permite tomar decisiones posteriores de modelado sustentadas en evidencia estadística y conceptual.
 
@@ -243,7 +243,7 @@ En la matriz de correlación expandida (incluida la nueva variable), se observa:
 ## Ejercicio 2 — Inferencia con Scikit-Learn
 ---
 
-En este ejercicio se construyen dos modelos de regresión lineal: uno para **Calories_Burned** y otro para la nueva variable **Calories_Burned_Por_Hora**. El objetivo es validar que ambos pipelines de preprocesamiento sean coherentes con la naturaleza de las variables y con los hallazgos del Ejercicio 1, permitiendo así comparar cómo la normalización por duración cambia la interpretabilidad de los predictores.
+Aquí, ya se construyen los modelos de regresión lineal: uno para **Calories_Burned** y otro para la nueva variable **Calories_Burned_Por_Hora**. El objetivo es validar que ambos pipelines de preprocesamiento sean coherentes con la naturaleza de las variables y con los hallazgos del Ejercicio 1, permitiendo así comparar cómo la normalización por duración cambia la interpretabilidad de los predictores.
 
 ---
 
@@ -453,25 +453,72 @@ Para validar la implementación, se utilizan datos sintéticos con coeficientes 
 
 ## Ejercicio 4 — Series Temporales
 ---
-Añade aqui tu descripción y analisis:
+En el último ejercicio se analiza una serie temporal sintética diaria para identificar su estructura interna y validar si el componente aleatorio se comporta como un ruido ideal. El flujo seguido fue: visualización global de la serie, descomposición aditiva en componentes interpretables y diagnóstico estadístico del residuo.
+
+La serie se genera con semilla fija (42), lo que garantiza reproducibilidad, y combina cuatro elementos: una tendencia creciente, una estacionalidad anual, un ciclo de largo plazo y un término aleatorio gaussiano. La composición aditiva puede resumirse como:
+
+$$
+y_t = T_t + S_t + C_t + \varepsilon_t
+$$
+
+Donde $T_t$ es la tendencia, $S_t$ la estacionalidad anual, $C_t$ el ciclo de baja frecuencia y $\varepsilon_t$ el ruido. En el gráfico de la serie completa se aprecia claramente un crecimiento global con oscilaciones periódicas superpuestas.
+
+![ej4_serie_original](output/ej4_serie_original.png)
+
+Para descomponer la señal se aplicó `seasonal_decompose` de `statsmodels` con modelo aditivo y `period=365`. Esta elección es correcta porque los datos son diarios y se espera repetición anual del patrón estacional. El resultado separa la señal en cuatro paneles: serie observada, tendencia, estacionalidad y residuo, facilitando una lectura limpia y etiquetada de cada componente.
+
+![ej4_descomposicion](output/ej4_descomposicion.png)
 
 ---
 
 **Pregunta 4.1** — ¿La serie presenta tendencia? Descríbela brevemente (tipo, dirección, magnitud aproximada).
 
-> _Escribe aquí tu respuesta_
+> Sí, la serie presenta una tendencia claramente **creciente** y aproximadamente **lineal**. En la componente de tendencia de la descomposición, el nivel pasa de alrededor de 60-65 al inicio a ~155 al final del periodo analizado, lo que supone un incremento acumulado aproximado de **90-100 unidades** (orden de magnitud cercano a +0.05 unidades por día). Por tanto, la dirección es positiva y sostenida en el tiempo.
 
 **Pregunta 4.2** — ¿Hay estacionalidad? Indica el periodo aproximado en días y la amplitud del patrón estacional.
 
-> _Escribe aquí tu respuesta_
+> Sí, hay estacionalidad marcada y estable. El componente estacional repite un patrón con **periodo aproximado de 365 días** (anual), coherente con la frecuencia diaria de los datos y el parámetro usado en la descomposición.
+>
+> En cuanto a magnitud, la señal estacional oscila aproximadamente entre **-22 y +12**, por lo que su amplitud pico-a-pico es de unas **34 unidades** (amplitud semionda aproximada de 17). Esta estructura periódica se observa de forma consistente año tras año en la descomposición y se refuerza con el análisis de autocorrelación, donde aparecen correlaciones pequeñas y patrón compatible con periodicidad anual tras extraer tendencia/estacionalidad principal.
+>
 
 **Pregunta 4.3** — ¿Se aprecian ciclos de largo plazo en la serie? ¿Cómo los diferencias de la tendencia?
 
-> _Escribe aquí tu respuesta_
+> Sí, se aprecian ciclos de largo plazo superpuestos al crecimiento general. Visualmente se observan oscilaciones amplias (de varios años) en la serie observada y, en parte, dentro del componente de tendencia suavizada.
+>
+> La diferencia conceptual es:
+> - **Tendencia:** movimiento de fondo, persistente y de largo recorrido (aquí, crecimiento positivo).
+> - **Ciclo:** desviaciones de baja frecuencia alrededor de esa tendencia, con alternancia de fases de aceleración/desaceleración.
+>
+> En esta serie, el ciclo tiene una escala temporal plurianual (aprox. 4 años) y menor magnitud que la tendencia acumulada, por eso no cambia la dirección general ascendente, pero sí modula la pendiente local en distintos tramos.
 
 **Pregunta 4.4** — ¿El residuo se ajusta a un ruido ideal? Indica la media, la desviación típica y el resultado del test de normalidad (p-value) para justificar tu respuesta.
 
-> _Escribe aquí tu respuesta_
+> El residuo se aproxima bastante bien a un ruido ideal.
+>
+> Estadísticos del residuo:
+> - **Media:** 0.1271 (cercana a 0)
+> - **Desviación típica:** 3.2220
+> - **Asimetría:** -0.0509 (muy próxima a 0)
+> - **Curtosis (exceso):** -0.0610 (muy próxima a 0)
+>
+> Test de normalidad:
+> - **Jarque-Bera p-value:** 0.5766
+> - Como $p > 0.05$, no se rechaza normalidad.
+>
+> Estacionariedad:
+> - **ADF p-value:** 0.0000
+> - Se rechaza la hipótesis nula de raíz unitaria; el residuo es estacionario.
+>
+> En términos de autocorrelación, el gráfico ACF/PACF muestra que, salvo un pico leve en rezagos muy cortos, la mayoría de valores cae dentro de las bandas de confianza, lo que sugiere dependencia temporal baja en el residuo.
+>
+>![ej4_acf_pacf](output/ej4_acf_pacf.png)
+>
+> El histograma del residuo con curva normal superpuesta mantiene una forma aproximadamente gaussiana y centrada cerca de cero, coherente con los resultados del test de normalidad.
+>
+>![ej4_histograma_ruido](output/ej4_histograma_ruido.png)
+>
+> **Conclusión razonada:** sí hay ruido, y su magnitud es moderada, de aproximadamente **$\sigma \approx 3.22$** unidades. En conjunto, por media cercana a 0, forma aproximadamente gaussiana y autocorrelación reducida, el residuo puede considerarse **compatible con ruido casi ideal** para fines de modelado.
 
 ---
 

@@ -1,0 +1,10 @@
+Análisis del Residuo (Ruido)
+=============================
+
+Media: 0.1271
+Desviación Estándar: 3.2220
+Asimetría: -0.0509
+Curtosis: -0.0610
+Jarque-Bera: stat=1.1013, p=0.5766
+ADF Test: p=0.0000
+

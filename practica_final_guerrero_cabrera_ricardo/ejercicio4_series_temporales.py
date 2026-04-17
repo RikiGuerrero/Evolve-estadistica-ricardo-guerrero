@@ -210,7 +210,7 @@ def analizar_residuo(residuo):
     curtosis  = residuo_limpio.kurtosis()
 
     from scipy.stats import jarque_bera
-    stat, p = jarque_bera(residuo_limpio)
+    stat_jb, p_jb = jarque_bera(residuo_limpio)
 
     # TODO: Test de estacionariedad (ADF)
     # from statsmodels.tsa.stattools import adfuller
@@ -238,8 +238,8 @@ def analizar_residuo(residuo):
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.hist(residuo_limpio, bins=30, density=True, alpha=0.6, color='g', edgecolor='k')
     x = np.linspace(residuo_limpio.min(), residuo_limpio.max(), 100)
-    p = norm.pdf(x, media, std)
-    ax.plot(x, p, 'r--', linewidth=2)
+    pdf_normal = norm.pdf(x, media, std)
+    ax.plot(x, pdf_normal, 'r--', linewidth=2)
     ax.set_title("Histograma del Residuo con Curva Normal Superpuesta")
     ax.set_xlabel("Valor del Residuo")
     ax.set_ylabel("Densidad")
@@ -248,6 +248,17 @@ def analizar_residuo(residuo):
     plt.tight_layout()
     plt.savefig("output/ej4_histograma_ruido.png", dpi=150, bbox_inches='tight')
     plt.close()
+    
+	# Resumen numérico del análisis en output/ej4_analisis.txt
+    with open("output/ej4_analisis.txt", "w") as f:
+        f.write("Análisis del Residuo (Ruido)\n")
+        f.write("=============================\n\n")
+        f.write(f"Media: {media:.4f}\n")
+        f.write(f"Desviación Estándar: {std:.4f}\n")
+        f.write(f"Asimetría: {asimetria:.4f}\n")
+        f.write(f"Curtosis: {curtosis:.4f}\n")
+        f.write(f"Jarque-Bera: stat={stat_jb:.4f}, p={p_jb:.4f}\n")
+        f.write(f"ADF Test: p={p_adf:.4f}\n\n")
 
 
 # =============================================================================
