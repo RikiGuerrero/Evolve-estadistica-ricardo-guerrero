@@ -70,13 +70,6 @@ def preprocesamiento(df: pd.DataFrame, target: str):
 		random_state=RANDOM_STATE,
 	)
 
-	print(f"Total filas: {len(df)}")
-	print(f"Train: {X_train.shape[0]} filas ({100 * (1 - TEST_SIZE):.0f}%)")
-	print(f"Test: {X_test.shape[0]} filas ({100 * TEST_SIZE:.0f}%)")
-	print(f"Variables numericas: {len(num_cols)}")
-	print(f"Variables categoricas: {len(cat_cols)}")
-	print(f"Target modelado: {target}")
-
 	preprocessor = crear_preprocesador(num_cols, cat_cols)
 
 	return X_train, X_test, y_train, y_test, preprocessor
@@ -150,8 +143,7 @@ def grafico_residuos(y_test, y_pred, out_dir: Path, target: str):
 		target (str): Variable objetivo para incorporar su nombre en la salida.
 
 	Valor de retorno:
-		None: La función guarda la figura y muestra por consola la
-			ruta del archivo generado.
+		Path: Ruta del archivo de imagen generado.
 	"""
 	residuos = y_test - y_pred
 
@@ -164,8 +156,8 @@ def grafico_residuos(y_test, y_pred, out_dir: Path, target: str):
 	plt.tight_layout()
 	ruta = out_dir / REQUIRED_OUTPUTS["residuos_png"].format(target=sufijo_archivo(target))
 	plt.savefig(ruta, dpi=180)
-	print(f"Grafico de residuos guardado en: {ruta}")
 	plt.close()
+	return ruta
 
 
 def guardar_metricas(mae: float, rmse: float, r2: float, out_dir: Path, target: str):
@@ -180,8 +172,7 @@ def guardar_metricas(mae: float, rmse: float, r2: float, out_dir: Path, target: 
 		target (str): Variable objetivo para incorporar su nombre en la salida.
 
 	Valor de retorno:
-		None: La función crea el archivo de métricas y reporta su
-			ruta por consola.
+		Path: Ruta del archivo de métricas creado.
 	"""
 	ruta = out_dir / REQUIRED_OUTPUTS["metricas_txt"].format(target=sufijo_archivo(target))
 	with open(ruta, "w", encoding="utf-8") as f:
@@ -190,7 +181,7 @@ def guardar_metricas(mae: float, rmse: float, r2: float, out_dir: Path, target: 
 		f.write(f"MAE: {mae:.6f}\n")
 		f.write(f"RMSE: {rmse:.6f}\n")
 		f.write(f"R2: {r2:.6f}\n")
-	print(f"Métricas guardadas en: {ruta}")
+	return ruta
 
 def variables_mas_influyentes(model, top_k: int = 10):
 	"""Obtiene las variables con mayor influencia según los coeficientes.
@@ -220,10 +211,6 @@ def variables_mas_influyentes(model, top_k: int = 10):
 
 if __name__ == "__main__":
 
-	print("=" * 70)
-	print("EJERCICIO 2 — Inferencia con Scikit-Learn")
-	print("=" * 70)
-
 	# Carga del csv y configuración de paths de entrada/salida
 	base_dir = Path(__file__).resolve().parent
 	data_path = base_dir / "data" / "dataset_enriquecido.csv"
@@ -234,30 +221,11 @@ if __name__ == "__main__":
 	df = pd.read_csv(data_path)
 
 	for target in TARGETS:
-		print("=" * 70)
-		print(f"PREPROCESAMIENTO - {etiqueta_target(target)}")
-		print("=" * 70)
 		X_train, X_test, y_train, y_test, preprocessor = preprocesamiento(df, target)
-
-		print("\n" + "=" * 70)
-		print(f"MODELO - REGRESION LINEAL ({etiqueta_target(target)})")
-		print("=" * 70)
 		modelo = entrenar_modelo(X_train, y_train, preprocessor)
 		resultados = evaluar_modelo(modelo, X_train, y_train, X_test, y_test)
 		y_pred_test = resultados["y_pred_test"]
 		grafico_residuos(y_test, y_pred_test, out_dir, target)
 		guardar_metricas(resultados['test']['mae'], resultados['test']['rmse'], resultados['test']['r2'], out_dir, target)
 
-		print("\n--- METRICAS TRAIN ---")
-		print(f"MAE:  {resultados['train']['mae']:.4f}")
-		print(f"RMSE: {resultados['train']['rmse']:.4f}")
-		print(f"R2:   {resultados['train']['r2']:.4f}")
-
-		print("\n--- METRICAS TEST ---")
-		print(f"MAE:  {resultados['test']['mae']:.4f}")
-		print(f"RMSE: {resultados['test']['rmse']:.4f}")
-		print(f"R2:   {resultados['test']['r2']:.4f}")
-
 		influyentes = variables_mas_influyentes(modelo, top_k=10)
-		print("\nVariables mas influyentes:")
-		print(influyentes[["variable", "coeficiente"]].to_string(index=False))

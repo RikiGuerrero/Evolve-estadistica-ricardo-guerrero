@@ -98,14 +98,6 @@ def resumen_estructural(df: pd.DataFrame, csv_path: Path):
 	dtypes = df.dtypes.astype(str)
 	nulos_pct = (df.isna().mean() * 100).round(2)
 
-	print(f"\nFilas: {n_filas}")
-	print(f"Columnas: {n_cols}")
-	print(f"Tamaño del CSV: {memoria_mb:.3f} MB")
-	print("\nTipos de dato (dtypes):")
-	print(dtypes)
-	print("\nPorcentaje de valores nulos por columna:")
-	print(nulos_pct.sort_values(ascending=False))
-
 	return {
 		"n_filas": n_filas,
 		"n_cols": n_cols,
@@ -116,7 +108,7 @@ def resumen_estructural(df: pd.DataFrame, csv_path: Path):
 
 
 def estadisticos(df: pd.DataFrame, num_cols: list[str], targets: list[str]):
-	"""Calcula y muestra estadísticas descriptivas de variables numéricas.
+	"""Calcula estadísticas descriptivas de variables numéricas.
 
 	Parámetros:
 		df (pd.DataFrame): DataFrame de entrada que contiene las variables
@@ -127,11 +119,10 @@ def estadisticos(df: pd.DataFrame, num_cols: list[str], targets: list[str]):
 			IQR, asimetría y curtosis.
 
 	Valor de retorno:
-		None: La función imprime por pantalla la tabla de estadísticos
-			descriptivos y las métricas de IQR, asimetría y curtosis de cada
-			target.
+		tuple[pd.DataFrame, dict[str, dict[str, float]]]:
+			- DataFrame con estadísticos descriptivos de las variables numéricas.
+			- Diccionario con métricas por target (`iqr`, `skewness`, `kurtosis`).
 	"""
-	# Estadísticos solicitados
 	stats_df = pd.DataFrame({
 		"media": df[num_cols].mean(),
 		"mediana": df[num_cols].median(),
@@ -145,7 +136,7 @@ def estadisticos(df: pd.DataFrame, num_cols: list[str], targets: list[str]):
 		"maximo": df[num_cols].max(),
 	}).round(4)
 
-	print(f"\n{stats_df}")
+	indicadores_targets = {}
 
 	for target in targets:
 		if target not in df.columns:
@@ -157,10 +148,13 @@ def estadisticos(df: pd.DataFrame, num_cols: list[str], targets: list[str]):
 		skew_target = df[target].skew()
 		kurt_target = df[target].kurtosis()
 
-		print(f"\nIndicadores para {etiqueta_target(target)} ({target}):")
-		print(f"IQR: {iqr_target:.4f}")
-		print(f"Asimetria (skewness): {skew_target:.4f}")
-		print(f"Curtosis: {kurt_target:.4f}")
+		indicadores_targets[target] = {
+			"iqr": float(iqr_target),
+			"skewness": float(skew_target),
+			"kurtosis": float(kurt_target),
+		}
+
+	return stats_df, indicadores_targets
 
 
 def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], out_dir: Path, targets: list[str]):
@@ -177,7 +171,8 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 		targets (list[str]): Lista de variables objetivo para generar boxplots.
 
 	Valor de retorno:
-		None: La función genera gráficos e imprime el resumen de outliers.
+		pd.DataFrame: Resumen de outliers por variable, ordenado por
+			porcentaje de outliers de mayor a menor.
 	"""
 	# Histogramas de variables numéricas
 	n_num = len(num_cols)
@@ -197,13 +192,10 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 	fig.suptitle("Histogramas de variables numéricas", fontsize=14)
 	fig.tight_layout()
 	fig.savefig(out_dir / REQUIRED_OUTPUTS["histogramas_png"], dpi=180)
-	print(f"\nHistogramas guardados en: {out_dir / REQUIRED_OUTPUTS['histogramas_png']}")
 	plt.close(fig)
 
 	# Boxplots de cada target por variable categórica.
-	if not cat_cols:
-		print("\nNo hay variables categóricas detectadas para boxplots.")
-	else:
+	if cat_cols:
 		for target in targets:
 			if target not in df.columns:
 				raise ValueError(f"La variable objetivo {target} no existe en el dataset.")
@@ -225,7 +217,6 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 			fig.tight_layout()
 			ruta_boxplot = out_dir / REQUIRED_OUTPUTS["boxplots_png"].format(target=sufijo_archivo(target))
 			fig.savefig(ruta_boxplot, dpi=180)
-			print(f"\nBoxplots guardados en: {ruta_boxplot}")
 			plt.close(fig)
 
 	# Detección de outliers.
@@ -246,8 +237,7 @@ def distribuciones(df: pd.DataFrame, num_cols: list[str], cat_cols: list[str], o
 		})
 
 	resumen_df = pd.DataFrame(outlier_resumen).sort_values(by="pct_outliers", ascending=False)
-	print("\nResumen de outliers por variable:")
-	print(resumen_df.to_string(index=False))
+	return resumen_df
 
 
 def categoricas(df: pd.DataFrame, cat_cols: list[str], out_dir: Path):
@@ -261,18 +251,19 @@ def categoricas(df: pd.DataFrame, cat_cols: list[str], out_dir: Path):
 			de variables categóricas.
 
 	Valor de retorno:
-		None: La función imprime tablas de frecuencias y mensajes de posible
-			desbalance, y guarda el gráfico en el directorio especificado.
+		dict[str, pd.DataFrame]: Diccionario con tablas de frecuencias por
+			variable categórica. Si no hay variables categóricas, devuelve
+			un diccionario vacío.
 	"""
 
 	if not cat_cols:
-		print("No hay variables categóricas detectadas.")
-		return
+		return {}
 
 	cols_plot = 2
 	rows_plot = int(np.ceil(len(cat_cols) / cols_plot))
 	fig, axes = plt.subplots(rows_plot, cols_plot, figsize=(cols_plot * 7, rows_plot * 4))
 	axes = np.array(axes).reshape(-1)
+	tablas_frecuencia = {}
 
 	for i, col in enumerate(cat_cols):
 		abs_freq = df[col].value_counts(dropna=False)
@@ -281,18 +272,14 @@ def categoricas(df: pd.DataFrame, cat_cols: list[str], out_dir: Path):
 			"frecuencia_abs": abs_freq,
 			"frecuencia_rel_pct": rel_freq,
 		})
-
-		print(f"\nFrecuencias en {col}:")
-		print(tabla)
+		tablas_frecuencia[col] = tabla
 
 		dom = rel_freq.iloc[0]
-		if dom > 60:
-			print(f"Posible desbalance: categoría dominante en {col} ({dom:.2f}%).")
-		else:
-			print(f"Sin dominio extremo en {col} (máximo {dom:.2f}%).")
 
 		sns.countplot(data=df, x=col, ax=axes[i], color="#457b9d")
 		axes[i].set_title(f"Frecuencia de {col}", fontsize=10)
+		if dom > 60:
+			axes[i].set_xlabel(f"{col} (posible desbalance)")
 		axes[i].tick_params(axis="x", rotation=25)
 
 	for j in range(i + 1, len(axes)):
@@ -301,8 +288,9 @@ def categoricas(df: pd.DataFrame, cat_cols: list[str], out_dir: Path):
 	fig.suptitle("Frecuencia de variables categóricas", fontsize=14)
 	fig.tight_layout()
 	fig.savefig(out_dir / REQUIRED_OUTPUTS["categoricas_png"], dpi=180)
-	print(f"\nGráficos de variables categóricas guardados en: {out_dir / REQUIRED_OUTPUTS['categoricas_png']}")
 	plt.close(fig)
+
+	return tablas_frecuencia
 
 
 def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path, targets: list[str]):
@@ -318,9 +306,9 @@ def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path, 
 			correlaciones más altas.
 
 	Valor de retorno:
-		None: La función no retorna valores; imprime por pantalla el top de
-			correlaciones con cada target y los pares con posible multicolinealidad,
-			y además guarda el heatmap en el directorio especificado.
+		tuple[dict[str, pd.Series], list[tuple[str, str, float]]]:
+			- Top 3 correlaciones absolutas por variable objetivo.
+			- Lista de pares con posible multicolinealidad (|r| > 0.9).
 	"""
 	# Calcula matriz de correlación de Pearson y genera un heatmap.
 	corr = df_tratado[num_cols].corr(method="pearson")
@@ -345,20 +333,17 @@ def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path, 
 	plt.yticks(rotation=0)
 	plt.tight_layout()
 	plt.savefig(out_dir / REQUIRED_OUTPUTS["heatmap_png"], dpi=180)
-	print(f"\nHeatmap de correlaciones guardado en: {out_dir / REQUIRED_OUTPUTS['heatmap_png']}\n")
 	plt.close()
 
 	# Analiza correlaciones con cada variable objetivo.
+	correlaciones_por_target = {}
 	for target in targets:
 		if target not in corr.columns:
 			raise ValueError(f"{target} no aparece en columnas numéricas para correlación.")
 
 		corr_target = corr[target].drop(target).abs().sort_values(ascending=False)
 		top3 = corr_target.head(3)
-
-		print(f"Top 3 correlaciones absolutas con {etiqueta_target(target)} ({target}):")
-		for var, r in top3.items():
-			print(f"  - {var}: {r:.4f}")
+		correlaciones_por_target[target] = top3
 
 	pares_multicol = []
 	cols_num = corr.columns.tolist()
@@ -368,18 +353,9 @@ def correlaciones(df_tratado: pd.DataFrame, num_cols: list[str], out_dir: Path, 
 			if abs(r) > 0.9:
 				pares_multicol.append((cols_num[i], cols_num[j], r))
 
-	if not pares_multicol:
-		print("\nNo se detectaron pares con multicolinealidad fuerte (|r| > 0.9).")
-	else:
-		print("\nPares con posible multicolinealidad (|r| > 0.9):")
-		for v1, v2, r in pares_multicol:
-			print(f"  - {v1} vs {v2}: r = {r:.4f}")
+	return correlaciones_por_target, pares_multicol
 
 if __name__ == "__main__":
-
-	print("=" * 70)
-	print("EJERCICIO 1 — Análisis Estadístico Descriptivo")
-	print("=" * 70)
 
 	# Carga del csv y configuración de paths de entrada/salida
 	base_dir = Path(__file__).resolve().parent
@@ -394,30 +370,14 @@ if __name__ == "__main__":
 	df["Calories_Burned_Per_Hour"] = df["Calories_Burned"] / df["Session_Duration (hours)"]
 	df.to_csv(base_dir / "data" / REQUIRED_OUTPUTS["dataset_enriquecido_csv"], index=False)
 
-	print("\n" + "=" * 70)
-	print("A) RESUMEN ESTRUCTURAL")
-	print("=" * 70)
 	resumen_estructural(df, data_path)
 	df.describe().to_csv(out_dir / REQUIRED_OUTPUTS["descriptivo_csv"], index=True)
-	print(f"\nEstadísticos descriptivos guardados en: {out_dir / REQUIRED_OUTPUTS['descriptivo_csv']}")
 
-	print("\n" + "=" * 70)
-	print("B) ESTADISTICOS DESCRIPTIVOS DE VARIABLES NUMERICAS")
-	print("=" * 70)
 	num_cols, cat_cols = detectar_columnas(df)
 	estadisticos(df, num_cols, TARGETS)
 
-	print("\n" + "=" * 70)
-	print("C) DISTRIBUCIONES")
-	print("=" * 70)
 	distribuciones(df, num_cols, cat_cols, out_dir, TARGETS)
 
-	print("\n" + "=" * 70)
-	print("D) VARIABLES CATEGÓRICAS")
-	print("=" * 70)
 	categoricas(df, cat_cols, out_dir)
 
-	print("\n" + "=" * 70)
-	print("E) CORRELACIONES")
-	print("=" * 70)
 	correlaciones(df, num_cols, out_dir, TARGETS)
